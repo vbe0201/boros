@@ -7,7 +7,7 @@
 
 #include <sys/mman.h>
 
-#include "macros.hpp"
+#define ALWAYS_INLINE __attribute__((always_inline)) inline
 
 namespace boros::impl {
 
