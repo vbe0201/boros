@@ -1,0 +1,25 @@
+#include <Python.h>
+
+namespace {
+
+    constinit PyMethodDef g_impl_methods[] = {
+        {nullptr, nullptr, 0, nullptr}
+    };
+
+    constinit PyModuleDef g_impl_module = {
+        PyModuleDef_HEAD_INIT,
+        "_impl",
+        "",
+        -1,
+        g_impl_methods,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr
+    };
+
+}
+
+PyMODINIT_FUNC PyInit__impl(void) {
+    return PyModule_Create(&g_impl_module);
+}
