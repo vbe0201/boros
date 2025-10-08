@@ -30,7 +30,14 @@ find_package(Python COMPONENTS
 #############
 
 Python_add_library(_impl MODULE
+    src/impl/macros.hpp
+    src/impl/squeue.hpp
+    src/impl/utils.hpp
+
     src/impl/module.cpp
+    src/impl/squeue.cpp
+    src/impl/utils.cpp
+
     WITH_SOABI
     USE_SABI ${SKBUILD_SABI_VERSION}
     )
@@ -50,8 +57,17 @@ target_compile_options(_impl PRIVATE
     -Wextra
     -Wno-invalid-offsetof
     -Wno-unused-parameter
-    )
 
+    -fno-rtti
+    -fno-exceptions
+    -fno-unwind-tables
+    -fno-asynchronous-unwind-tables
+    )
+target_compile_definitions(_impl PRIVATE -DPY_SSIZE_T_CLEAN)
 target_compile_features(_impl PRIVATE cxx_std_23)
+set_property(TARGET _impl PROPERTY
+    INTERFACE_POSITION_INDEPENDENT_CODE ON
+    INTERPROCEDURAL_OPTIMIZATION ON
+    )
 
 install(TARGETS _impl DESTINATION ${SKBUILD_PROJECT_NAME})

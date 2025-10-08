@@ -20,6 +20,6 @@ namespace {
 
 }
 
-PyMODINIT_FUNC PyInit__impl(void) {
+PyMODINIT_FUNC PyInit__impl() {
     return PyModule_Create(&g_impl_module);
 }

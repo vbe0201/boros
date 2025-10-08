@@ -19,4 +19,4 @@ wheels/
 
 # Nix
 .direnv/
-result/
+result
