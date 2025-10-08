@@ -9,7 +9,7 @@ namespace {
     constinit PyModuleDef g_impl_module = {
         PyModuleDef_HEAD_INIT,
         "_impl",
-        "",
+        "Implementation details of boros._impl",
         -1,
         g_impl_methods,
         nullptr,

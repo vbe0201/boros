@@ -18,9 +18,33 @@
         pkgs,
         ...
       }: {
+        packages.default = self'.packages.boros;
+
+        packages.boros = let
+          boros_toml = builtins.fromTOML (builtins.readFile ./pyproject.toml);
+        in pkgs.python3Packages.buildPythonPackage {
+          pname = boros_toml.project.name;
+          version = boros_toml.project.version;
+          format = "pyproject";
+          src = ./.;
+
+          nativeBuildInputs = with pkgs; [
+            cmake
+            ninja
+            python3Packages.scikit-build-core
+          ];
+
+          dontUseCmakeConfigure = true;
+          dontUseCmakeBuild = true;
+          dontUseCmakeInstall = true;
+
+          doCheck = false;
+        };
+
         devShells.default = pkgs.mkShell {
           packages = with pkgs; [
             cmake
+            ninja
             python310
             uv
           ];
