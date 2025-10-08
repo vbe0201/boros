@@ -30,10 +30,12 @@ find_package(Python COMPONENTS
 #############
 
 Python_add_library(_impl MODULE
+    src/impl/cqueue.hpp
     src/impl/macros.hpp
     src/impl/squeue.hpp
     src/impl/utils.hpp
 
+    src/impl/cqueue.cpp
     src/impl/module.cpp
     src/impl/squeue.cpp
     src/impl/utils.cpp

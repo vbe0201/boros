@@ -1,29 +1,27 @@
 #pragma once
 
-#include <cstdint>
-
 #include <linux/io_uring.h>
 
 #include "utils.hpp"
 
 namespace boros::impl {
 
-    struct Entry {
-        io_uring_sqe Sqe;
+    struct SubmissionEntry {
+        io_uring_sqe Sqe{};
 
-        auto SetFlags(__u8 flags) noexcept -> void {
+        ALWAYS_INLINE auto SetFlags(__u8 flags) noexcept -> void {
             Sqe.flags = flags;
         }
 
-        auto GetData() const noexcept -> void* {
+        ALWAYS_INLINE auto GetData() const noexcept -> void* {
             return reinterpret_cast<void*>(Sqe.user_data);
         }
 
-        auto SetData(void *user_data) noexcept -> void {
+        ALWAYS_INLINE auto SetData(void *user_data) noexcept -> void {
             Sqe.user_data = reinterpret_cast<std::uintptr_t>(user_data);
         }
 
-        auto SetPersonality(__u16 personality) -> void {
+        ALWAYS_INLINE auto SetPersonality(__u16 personality) -> void {
             Sqe.personality = personality;
         }
     };
@@ -40,7 +38,7 @@ namespace boros::impl {
         unsigned m_ring_entries;
         unsigned *m_kflags;
         unsigned *m_kdropped;
-        Entry *m_entries;
+        SubmissionEntry *m_entries;
 
     public:
         SubmissionQueue(const io_uring_params &p, const Mmap &sq_mmap, const Mmap &sqe_mmap) noexcept;
@@ -55,7 +53,9 @@ namespace boros::impl {
     public:
         explicit SubmissionQueueHandle(SubmissionQueue &queue) noexcept;
 
-        ~SubmissionQueueHandle() noexcept;
+        ALWAYS_INLINE ~SubmissionQueueHandle() noexcept {
+            AtomicStore(m_queue->m_ktail, m_tail, std::memory_order_release);
+        }
 
         ALWAYS_INLINE auto Synchronize() noexcept -> void {
             AtomicStore(m_queue->m_ktail, m_tail, std::memory_order_release);
@@ -95,7 +95,7 @@ namespace boros::impl {
             return this->GetSize() == this->GetCapacity();
         }
 
-        ALWAYS_INLINE auto PushUnchecked(Entry &entry) noexcept -> void {
+        ALWAYS_INLINE auto PushUnchecked(SubmissionEntry &entry) noexcept -> void {
             m_queue->m_entries[m_tail & m_queue->m_ring_mask] = entry;
             ++m_tail;
         }

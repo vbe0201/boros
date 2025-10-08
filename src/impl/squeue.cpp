@@ -9,7 +9,7 @@ namespace boros::impl {
           m_ring_entries(*sq_mmap.Offset<unsigned>(p.sq_off.ring_entries)),
           m_kflags(sq_mmap.Offset<unsigned>(p.sq_off.flags)),
           m_kdropped(sq_mmap.Offset<unsigned>(p.sq_off.dropped)),
-          m_entries(static_cast<Entry*>(sqe_mmap.Address))
+          m_entries(static_cast<SubmissionEntry*>(sqe_mmap.Address))
     {
         /* To keep things simple, we map the slots directly to entries. */
         volatile unsigned *array = sq_mmap.Offset<unsigned>(p.sq_off.array);
@@ -22,9 +22,5 @@ namespace boros::impl {
         : m_head(AtomicLoad(queue.m_khead, std::memory_order_acquire)),
           m_tail(*queue.m_ktail),
           m_queue(&queue) {}
-
-    SubmissionQueueHandle::~SubmissionQueueHandle() noexcept {
-        AtomicStore(m_queue->m_ktail, m_tail, std::memory_order_release);
-    }
 
 }
