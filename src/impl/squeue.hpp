@@ -20,10 +20,6 @@ namespace boros::impl {
         ALWAYS_INLINE auto SetData(void *user_data) noexcept -> void {
             Sqe.user_data = reinterpret_cast<std::uintptr_t>(user_data);
         }
-
-        ALWAYS_INLINE auto SetPersonality(__u16 personality) -> void {
-            Sqe.personality = personality;
-        }
     };
 
     class SubmissionQueueHandle;
