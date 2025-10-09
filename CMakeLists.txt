@@ -31,11 +31,13 @@ find_package(Python COMPONENTS
 
 Python_add_library(_impl MODULE
     src/impl/cqueue.hpp
+    src/impl/ring.hpp
     src/impl/squeue.hpp
     src/impl/utils.hpp
 
     src/impl/cqueue.cpp
     src/impl/module.cpp
+    src/impl/ring.cpp
     src/impl/squeue.cpp
     src/impl/utils.cpp
 

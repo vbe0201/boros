@@ -32,16 +32,18 @@ namespace boros::impl {
         friend class SubmissionQueueHandle;
 
     private:
-        unsigned *m_khead;
-        unsigned *m_ktail;
-        unsigned m_ring_mask;
-        unsigned m_ring_entries;
-        unsigned *m_kflags;
-        unsigned *m_kdropped;
-        SubmissionEntry *m_entries;
+        unsigned *m_khead = nullptr;
+        unsigned *m_ktail = nullptr;
+        unsigned m_ring_mask = 0;
+        unsigned m_ring_entries = 0;
+        unsigned *m_kflags = nullptr;
+        unsigned *m_kdropped = nullptr;
+        SubmissionEntry *m_entries = nullptr;
 
     public:
-        SubmissionQueue(const io_uring_params &p, const Mmap &sq_mmap, const Mmap &sqe_mmap) noexcept;
+        ALWAYS_INLINE SubmissionQueue() noexcept = default;
+
+        auto Map(const io_uring_params &p, const Mmap &sq_mmap, const Mmap &sqe_mmap) noexcept -> void;
     };
 
     class SubmissionQueueHandle {

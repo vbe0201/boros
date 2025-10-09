@@ -4,26 +4,23 @@
 
 namespace boros::impl {
 
-    auto Mmap::Create(int fd, off_t offset, std::size_t len) noexcept -> std::expected<Mmap, int> {
+    auto Mmap::Create(int fd, off_t offset, std::size_t len) noexcept -> int {
         void *ptr = mmap(nullptr, len, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_POPULATE, fd, offset);
         if (ptr == MAP_FAILED) [[unlikely]] {
-            return std::unexpected(errno);
+            return errno;
         }
 
-        return Mmap{ptr, len};
+        Address = ptr;
+        Size    = len;
+        return 0;
     }
 
-    Mmap::~Mmap() noexcept {
-        munmap(Address, Size);
-    }
-
-    auto Mmap::DontFork() const noexcept -> std::expected<void, int> {
-        int res = madvise(Address, Size, MADV_DONTFORK);
-        if (res != 0) [[unlikely]] {
-            return std::unexpected(errno);
+    auto Mmap::Destroy() noexcept -> void {
+        if (this->IsMapped()) {
+            munmap(Address, Size);
+            Address = nullptr;
+            Size    = 0;
         }
-
-        return {};
     }
 
 }

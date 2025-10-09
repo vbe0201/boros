@@ -3,7 +3,6 @@
 #include <atomic>
 #include <cstddef>
 #include <cstdint>
-#include <expected>
 
 #include <sys/mman.h>
 
@@ -12,15 +11,38 @@
 namespace boros::impl {
 
     struct Mmap {
-    public:
         void *Address;
         std::size_t Size;
 
-    public:
-        static auto Create(int fd, off_t offset, std::size_t len) noexcept -> std::expected<Mmap, int>;
-        ~Mmap() noexcept;
+        ALWAYS_INLINE Mmap() : Address(nullptr), Size(0) {}
 
-        auto DontFork() const noexcept -> std::expected<void, int>;
+        Mmap(const Mmap&) = delete;
+        Mmap &operator=(const Mmap&) = delete;
+
+        ALWAYS_INLINE Mmap(Mmap &&rhs) noexcept : Address(rhs.Address), Size(rhs.Size) {
+            rhs.Address = nullptr;
+            rhs.Size    = 0;
+        }
+
+        ALWAYS_INLINE Mmap &operator=(Mmap &&rhs) noexcept {
+            if (this != &rhs) {
+                this->Destroy();
+                std::swap(Address, rhs.Address);
+                std::swap(Size, rhs.Size);
+            }
+            return *this;
+        }
+
+        ~Mmap() noexcept {
+            this->Destroy();
+        }
+
+        auto Create(int fd, off_t offset, std::size_t len) noexcept -> int;
+        auto Destroy() noexcept -> void;
+
+        ALWAYS_INLINE auto IsMapped() const noexcept -> bool {
+            return Address != nullptr;
+        }
 
         template <typename T>
         ALWAYS_INLINE auto Offset(std::uint32_t offset) const noexcept -> T* {

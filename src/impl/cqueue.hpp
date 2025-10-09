@@ -28,16 +28,18 @@ namespace boros::impl {
         friend class CompletionQueueHandle;
 
     private:
-        unsigned *m_khead;
-        unsigned *m_ktail;
-        unsigned m_ring_mask;
-        unsigned m_ring_entries;
-        unsigned *m_kflags;
-        unsigned *m_koverflow;
-        CompletionEntry *m_entries;
+        unsigned *m_khead = nullptr;
+        unsigned *m_ktail = nullptr;
+        unsigned m_ring_mask = 0;
+        unsigned m_ring_entries = 0;
+        unsigned *m_kflags = nullptr;
+        unsigned *m_koverflow = nullptr;
+        CompletionEntry *m_entries = nullptr;
 
     public:
-        CompletionQueue(const io_uring_params &p, const Mmap &cq_mmap) noexcept;
+        ALWAYS_INLINE CompletionQueue() noexcept = default;
+
+        auto Map(const io_uring_params &p, const Mmap &cq_mmap) noexcept -> void;
     };
 
     class CompletionQueueHandle {
