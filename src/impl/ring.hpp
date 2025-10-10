@@ -18,15 +18,20 @@ namespace boros::impl {
         Mmap m_sqe_mmap;
         Mmap m_cq_mmap;
 
-    private:
-        auto RegisterRaw(unsigned int opcode, const void *arg, unsigned int num_args) const noexcept -> int;
-
     public:
         Ring() noexcept = default;
         ~Ring() noexcept;
 
         auto Create(unsigned entries, io_uring_params &p) noexcept -> int;
         auto CreateWithFile(int fd, io_uring_params &p) noexcept -> int;
+
+        ALWAYS_INLINE auto GetFlags() const noexcept -> unsigned {
+            return m_flags;
+        }
+
+        ALWAYS_INLINE auto GetFeatures() const noexcept -> unsigned {
+            return m_features;
+        }
 
         ALWAYS_INLINE auto GetSubmissionQueue() noexcept -> SubmissionQueueHandle {
             return SubmissionQueueHandle{m_submission_queue};
@@ -36,6 +41,10 @@ namespace boros::impl {
             return CompletionQueueHandle{m_completion_queue};
         }
 
+    private:
+        auto RegisterRaw(unsigned int opcode, const void *arg, unsigned int num_args) const noexcept -> int;
+
+    public:
         auto RegisterFilesSparse(unsigned num_files) const noexcept -> int;
         auto UnregisterFiles() const noexcept -> int;
 
@@ -57,6 +66,10 @@ namespace boros::impl {
         auto RegisterBufRing(io_uring_buf_reg *reg) const noexcept -> int;
         auto UnregisterBufRing(int bgid) const noexcept -> int;
         auto GetBufRingHead(int buf_group, std::uint16_t *head) const noexcept -> int;
+
+    public:
+        auto SubmitAndWait(unsigned want) const noexcept -> int;
+        auto Submit() const noexcept -> int;
     };
 
 }

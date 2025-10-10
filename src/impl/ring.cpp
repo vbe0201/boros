@@ -8,26 +8,48 @@
 
 namespace boros::impl {
 
+	namespace {
+
+		ALWAYS_INLINE int SetupRing(unsigned int entries, io_uring_params *p) noexcept {
+			int res = static_cast<int>(syscall(__NR_io_uring_setup, entries, p));
+			if (res < 0) [[unlikely]] {
+				return -errno;
+			}
+			return res;
+		}
+
+		ALWAYS_INLINE int RegisterRing(int fd, unsigned int opcode, const void *arg, unsigned int num_args) noexcept {
+			int res = static_cast<int>(syscall(__NR_io_uring_register, fd, opcode, arg, num_args));
+			if (res < 0) [[unlikely]] {
+				return -errno;
+			}
+			return res;
+		}
+
+		ALWAYS_INLINE int EnterRing(int fd, unsigned int num_submit, unsigned int want, unsigned int flags) noexcept {
+			int res = static_cast<int>(syscall(__NR_io_uring_enter, fd, num_submit, want, flags, nullptr, 0));
+			if (res < 0) [[unlikely]] {
+				return -errno;
+			}
+			return res;
+		}
+
+	}
+
     auto Ring::RegisterRaw(unsigned int opcode, const void* arg, unsigned int num_args) const noexcept -> int {
         if (m_registered) {
             opcode |= IORING_REGISTER_USE_REGISTERED_RING;
         }
-
-        int res = static_cast<int>(syscall(__NR_io_uring_register, m_enter_fd, opcode, arg, num_args));
-        if (res < 0) [[unlikely]] {
-            return -errno;
-        }
-
-        return 0;
+        return RegisterRing(m_enter_fd, opcode, arg, num_args);
     }
 
     auto Ring::Create(unsigned entries, io_uring_params& p) noexcept -> int {
         // Allocate a file descriptor for the io_uring we're going to manage.
         // This can also be a direct descriptor, depending on the params.
-        int fd = static_cast<int>(syscall(__NR_io_uring_setup, entries, &p));
-        if (fd < 0) [[unlikely]] {
-            return -errno;
-        }
+		int fd = SetupRing(entries, &p);
+		if (fd < 0) [[unlikely]] {
+			return fd;
+		}
 
         // Try to create the ring instance. If we fail, dispose of the file.
         if (int res = this->CreateWithFile(fd, p); res != 0) [[unlikely]] {
@@ -216,5 +238,42 @@ namespace boros::impl {
     	*head = status.head;
     	return 0;
     }
+
+	auto Ring::SubmitAndWait(unsigned want) const noexcept -> int {
+    	unsigned num_submit  = m_submission_queue.GetUnsubmittedEntries();
+    	unsigned enter_flags = 0;
+
+    	// When the Completion Queue overflows with IORING_FEAT_NODROP enabled, the
+    	// kernel buffers these overflown events but doesn't automatically flush them
+    	// to the queue when space becomes available. This mandates an io_uring_enter
+    	// call, even with IORING_SETUP_SQPOLL enabled.
+    	bool cq_needs_enter = want > 0 || m_submission_queue.NeedCompletionQueueFlush();
+
+    	if ((m_flags & IORING_SETUP_SQPOLL) != 0) {
+    		// Ordering: Sequential consistency is required to ensure our write to the
+    		// ktail is observed by the kernel before reading the flags below.
+    		std::atomic_thread_fence(std::memory_order_seq_cst);
+
+    		if (m_submission_queue.NeedWakeup()) [[unlikely]] {
+    			enter_flags |= IORING_ENTER_SQ_WAKEUP;
+    		} else if (!cq_needs_enter) {
+    			return static_cast<int>(num_submit);
+    		}
+    	}
+
+    	if (cq_needs_enter) {
+    		enter_flags |= IORING_ENTER_GETEVENTS;
+    	}
+
+    	if (m_registered) {
+    		enter_flags |= IORING_ENTER_REGISTERED_RING;
+    	}
+
+    	return EnterRing(m_enter_fd, num_submit, want, enter_flags);
+	}
+
+	auto Ring::Submit() const noexcept -> int {
+		return this->SubmitAndWait(0);
+	}
 
 }

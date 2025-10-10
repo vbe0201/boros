@@ -33,13 +33,38 @@ namespace boros::impl {
         unsigned m_ring_mask = 0;
         unsigned m_ring_entries = 0;
         unsigned *m_kflags = nullptr;
-        unsigned *m_kdropped = nullptr;
+        unsigned *m_kdropped = nullptr; // TODO: Do we even care about this?
         SubmissionEntry *m_entries = nullptr;
 
     public:
         ALWAYS_INLINE SubmissionQueue() noexcept = default;
 
         auto Map(const io_uring_params &p, const Mmap &sq_mmap, const Mmap &sqe_mmap) noexcept -> void;
+
+        ALWAYS_INLINE auto GetUnsubmittedEntries() const noexcept -> unsigned {
+            // Ordering: khead is concurrently written by the kernel. Relaxed ordering
+            // is sufficient because the kernel never writes to Submission Queue slots,
+            // it merely bumps khead when it is done consuming a submission. ktail is
+            // safe to load without synchronization because we only ever have a single
+            // producer thread per ring.
+            return *m_ktail - AtomicLoad(m_khead, std::memory_order_relaxed);
+        }
+
+        ALWAYS_INLINE auto NeedWakeup() const noexcept -> bool {
+            // Ordering: The kernel must observe a write to ktail first before it sets
+            // this flag. This is enforced through a sequential consistency fence and
+            // that already provides sufficient synchronization for the relaxed load
+            // to observe changes to kflags.
+            return (AtomicLoad(m_kflags, std::memory_order_relaxed) & IORING_SQ_NEED_WAKEUP) != 0;
+        }
+
+        ALWAYS_INLINE auto NeedCompletionQueueFlush() const noexcept -> bool {
+            // Ordering: This is merely an informational function and these flags are
+            // not set as a response to a Submission Queue write in SQPOLL mode. There
+            // is no need for a stricter ordering than relaxed.
+            auto flags = AtomicLoad(m_kflags, std::memory_order_relaxed);
+            return (flags & (IORING_SQ_CQ_OVERFLOW | IORING_SQ_TASKRUN)) != 0;
+        }
     };
 
     class SubmissionQueueHandle {
@@ -52,29 +77,22 @@ namespace boros::impl {
         explicit SubmissionQueueHandle(SubmissionQueue &queue) noexcept;
 
         ALWAYS_INLINE ~SubmissionQueueHandle() noexcept {
+            // Ordering: Release store forms a happens-before relationship with the
+            // kernel's acquire load of ktail. This ensures the kernel correctly
+            // sees the submissions we've written prior to bumping ktail.
             AtomicStore(m_queue->m_ktail, m_tail, std::memory_order_release);
         }
 
         ALWAYS_INLINE auto Synchronize() noexcept -> void {
+            // Ordering: Release store forms a happens-before relationship with the
+            // kernel's acquire load of ktail. This ensures the kernel correctly
+            // sees the submissions we've written prior to bumping ktail.
             AtomicStore(m_queue->m_ktail, m_tail, std::memory_order_release);
+
+            // Ordering: Acquire load forms a happens-before relationship with the
+            // kernel's release store of khead. This ensures the kernel has finished
+            // reading submissions from the released slots before we fill them again.
             m_head = AtomicLoad(m_queue->m_khead, std::memory_order_acquire);
-        }
-
-        ALWAYS_INLINE auto NeedWakeup() const noexcept -> bool {
-            std::atomic_thread_fence(std::memory_order_seq_cst);
-            return (AtomicLoad(m_queue->m_kflags, std::memory_order_relaxed) & IORING_SQ_NEED_WAKEUP) != 0;
-        }
-
-        ALWAYS_INLINE auto GetDropped() const noexcept -> unsigned {
-            return AtomicLoad(m_queue->m_kdropped, std::memory_order_acquire);
-        }
-
-        ALWAYS_INLINE auto HasCompletionQueueOverflow() const noexcept -> bool {
-            return (AtomicLoad(m_queue->m_kflags, std::memory_order_acquire) & IORING_SQ_CQ_OVERFLOW) != 0;
-        }
-
-        ALWAYS_INLINE auto HasPendingTaskrun() const noexcept -> bool {
-            return (AtomicLoad(m_queue->m_kflags, std::memory_order_acquire) & IORING_SQ_TASKRUN) != 0;
         }
 
         ALWAYS_INLINE auto GetCapacity() const noexcept -> unsigned {

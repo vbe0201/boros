@@ -33,7 +33,7 @@ namespace boros::impl {
         unsigned m_ring_mask = 0;
         unsigned m_ring_entries = 0;
         unsigned *m_kflags = nullptr;
-        unsigned *m_koverflow = nullptr;
+        unsigned *m_koverflow = nullptr; // TODO: Do we even need this?
         CompletionEntry *m_entries = nullptr;
 
     public:
@@ -52,16 +52,24 @@ namespace boros::impl {
         explicit CompletionQueueHandle(CompletionQueue &queue) noexcept;
 
         ALWAYS_INLINE ~CompletionQueueHandle() noexcept {
+            // Ordering: Release store forms a happens-before relationship with the
+            // kernel's acquire load of khead. This ensures we are not accessing the
+            // Completion Queue slots we consumed anymore by the time the kernel is
+            // populating them again.
             AtomicStore(m_queue->m_khead, m_head, std::memory_order_release);
         }
 
         ALWAYS_INLINE auto Synchronize() noexcept -> void {
+            // Ordering: Release store forms a happens-before relationship with the
+            // kernel's acquire load of khead. This ensures we are not accessing the
+            // Completion Queue slots we consumed anymore by the time the kernel is
+            // populating them again.
             AtomicStore(m_queue->m_khead, m_head, std::memory_order_release);
-            m_tail = AtomicLoad(m_queue->m_ktail, std::memory_order_acquire);
-        }
 
-        ALWAYS_INLINE auto GetOverflow() const noexcept -> unsigned {
-            return AtomicLoad(m_queue->m_koverflow, std::memory_order_acquire);
+            // Ordering: Acquire load forms a happens-before relationship with the
+            // kernel's release store of ktail. This ensures that the kernel has
+            // finished populating the reported slots before we start reading them.
+            m_tail = AtomicLoad(m_queue->m_ktail, std::memory_order_acquire);
         }
 
         ALWAYS_INLINE auto GetCapacity() const noexcept -> unsigned {
