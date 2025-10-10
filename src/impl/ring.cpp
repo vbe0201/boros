@@ -74,6 +74,8 @@ namespace boros::impl {
             return res;
         }
 
+		// TODO: Remove conditional handling of IORING_FEAT_SINGLE_MMAP not being present.
+		//       We won't support kernels old enough to not have it.
         if ((p.features & IORING_FEAT_SINGLE_MMAP) != 0) {
             // Submission Queue and Completion Queue will be merged into a single mapping,
             // so pick the bigger of both queue sizes as the size of that mapping.
