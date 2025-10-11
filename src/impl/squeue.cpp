@@ -1,3 +1,6 @@
+// This source file is part of the boros project.
+// SPDX-License-Identifier: MIT
+
 #include "squeue.hpp"
 
 namespace boros::impl {

@@ -1,3 +1,6 @@
+// This source file is part of the boros project.
+// SPDX-License-Identifier: MIT
+
 #include <Python.h>
 
 namespace {

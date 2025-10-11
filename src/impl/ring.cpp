@@ -1,6 +1,7 @@
-#include "ring.hpp"
+// This source file is part of the boros project.
+// SPDX-License-Identifier: MIT
 
-#include <algorithm>
+#include "ring.hpp"
 
 #include <sys/syscall.h>
 #include <sys/types.h>
@@ -45,7 +46,6 @@ namespace boros::impl {
 
     auto Ring::Create(unsigned entries, io_uring_params& p) noexcept -> int {
         // Allocate a file descriptor for the io_uring we're going to manage.
-        // This can also be a direct descriptor, depending on the params.
 		int fd = SetupRing(entries, &p);
 		if (fd < 0) [[unlikely]] {
 			return fd;
@@ -74,8 +74,6 @@ namespace boros::impl {
             return res;
         }
 
-		// TODO: Remove conditional handling of IORING_FEAT_SINGLE_MMAP not being present.
-		//       We won't support kernels old enough to not have it.
         if ((p.features & IORING_FEAT_SINGLE_MMAP) != 0) {
             // Submission Queue and Completion Queue will be merged into a single mapping,
             // so pick the bigger of both queue sizes as the size of that mapping.
@@ -135,18 +133,6 @@ namespace boros::impl {
 
     auto Ring::UnregisterFiles() const noexcept -> int {
         return this->RegisterRaw(IORING_UNREGISTER_FILES, nullptr, 0);
-    }
-
-    auto Ring::RegisterEventFd(int fd) const noexcept -> int {
-        return this->RegisterRaw(IORING_REGISTER_EVENTFD, &fd, 1);
-    }
-
-    auto Ring::RegisterEventFdAsync(int fd) const noexcept -> int {
-        return this->RegisterRaw(IORING_REGISTER_EVENTFD_ASYNC, &fd, 1);
-    }
-
-    auto Ring::UnregisterEventFd() const noexcept -> int {
-        return this->RegisterRaw(IORING_UNREGISTER_EVENTFD, nullptr, 0);
     }
 
 	auto Ring::RegisterProbe(io_uring_probe* probe) const noexcept -> int {
@@ -209,14 +195,6 @@ namespace boros::impl {
     	return 1;
 	}
 
-	auto Ring::RegisterNapi(io_uring_napi* napi) const noexcept -> int {
-		return this->RegisterRaw(IORING_REGISTER_NAPI, napi, 1);
-	}
-
-	auto Ring::UnregisterNapi(io_uring_napi* napi) const noexcept -> int {
-		return this->RegisterRaw(IORING_UNREGISTER_NAPI, napi, 1);
-	}
-
 	auto Ring::RegisterBufRing(io_uring_buf_reg *reg) const noexcept -> int {
 	    return this->RegisterRaw(IORING_REGISTER_PBUF_RING, reg, 1);
     }
@@ -272,10 +250,6 @@ namespace boros::impl {
     	}
 
     	return EnterRing(m_enter_fd, num_submit, want, enter_flags);
-	}
-
-	auto Ring::Submit() const noexcept -> int {
-		return this->SubmitAndWait(0);
 	}
 
 }

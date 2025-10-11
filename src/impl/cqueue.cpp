@@ -1,3 +1,6 @@
+// This source file is part of the boros project.
+// SPDX-License-Identifier: MIT
+
 #include "cqueue.hpp"
 
 namespace boros::impl {
@@ -21,6 +24,11 @@ namespace boros::impl {
         AtomicStore(m_queue->m_khead, m_head, std::memory_order_release);
     }
 
+    auto CompletionQueue::Iterator::operator*() const noexcept -> CompletionEntry {
+        auto *cqe = &m_queue->m_entries[m_head & m_mask];
+        return CompletionEntry{cqe};
+    }
+
     auto CompletionQueue::begin() noexcept -> Iterator {
         return Iterator{this};
     }
@@ -29,7 +37,7 @@ namespace boros::impl {
         // Ordering: Acquire load forms a happens-before relationship with the
         // kernel's release store of ktail. This ensures that the kernel is not
         // accessing the queue slots anymore by the time we start reading them.
-        unsigned tail = AtomicLoad(m_ktail, std::memory_order_acquire);
+        const unsigned tail = AtomicLoad(m_ktail, std::memory_order_acquire);
         return Sentinel{tail};
     }
 
