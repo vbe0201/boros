@@ -35,9 +35,9 @@ namespace boros::impl {
     }
 
     auto SubmissionQueue::Synchronize() const noexcept -> unsigned {
-        // Ordering: Release store forms a happens-before relationship with
-        // the kernel's acquire load of ktail. This ensures the changes we
-        // have made to submission slots will be correctly observed.
+        // Ordering: Release store forms a happens-before relationship with the
+        // kernel's acquire load of ktail. This ensures the changes we have made
+        // to submission slots will be correctly observed.
         AtomicStore(m_ktail, m_local_tail, std::memory_order_release);
 
         // Ordering: khead is concurrently written by the kernel. Relaxed ordering

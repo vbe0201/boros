@@ -12,22 +12,20 @@ namespace boros::impl {
     /// Represents an entry in the submission queue.
     /// Must be populated and then submitted to the kernel.
     struct SubmissionEntry {
-    private:
-        io_uring_sqe *m_sqe;
+        io_uring_sqe *Sqe;
 
-    public:
         /// Creates an entry from the underlying io_uring_sqe.
         ALWAYS_INLINE explicit SubmissionEntry(io_uring_sqe *sqe) noexcept;
 
         /// Sets the given flags on the submission entry.
         ALWAYS_INLINE auto SetFlags(__u8 flags) noexcept -> void {
-            m_sqe->flags = flags;
+            Sqe->flags = flags;
         }
 
         /// Sets arbitrary user data on the submission entry.
         /// This is then passed to the associated completion entry.
         ALWAYS_INLINE auto SetData(void *user_data) noexcept -> void {
-            m_sqe->user_data = reinterpret_cast<std::uintptr_t>(user_data);
+            Sqe->user_data = reinterpret_cast<std::uintptr_t>(user_data);
         }
     };
 
