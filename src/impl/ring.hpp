@@ -37,8 +37,8 @@ namespace boros::impl {
             return SubmissionQueueHandle{m_submission_queue};
         }
 
-        ALWAYS_INLINE auto GetCompletionQueue() noexcept -> CompletionQueueHandle {
-            return CompletionQueueHandle{m_completion_queue};
+        ALWAYS_INLINE auto GetCompletionQueue() noexcept -> CompletionQueue& {
+            return m_completion_queue;
         }
 
     private:

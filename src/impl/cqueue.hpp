@@ -6,26 +6,30 @@
 
 namespace boros::impl {
 
-    class CompletionEntry {
-        io_uring_cqe Cqe{};
+    struct CompletionEntry {
+    private:
+        io_uring_cqe *m_cqe;
 
-        ALWAYS_INLINE auto GetResult() const noexcept -> __s32 {
-            return Cqe.res;
+    public:
+        ALWAYS_INLINE explicit CompletionEntry(io_uring_cqe *cqe) noexcept : m_cqe(cqe) {}
+
+        ALWAYS_INLINE auto GetResult() const noexcept -> int {
+            return m_cqe->res;
         }
 
         ALWAYS_INLINE auto GetData() const noexcept -> void* {
-            return reinterpret_cast<void*>(Cqe.user_data);
+            return reinterpret_cast<void*>(m_cqe->user_data);
         }
 
-        ALWAYS_INLINE auto GetFlags() const noexcept -> __u32 {
-            return Cqe.flags;
+        ALWAYS_INLINE auto GetFlags() const noexcept -> unsigned {
+            return m_cqe->flags;
         }
     };
 
-    class CompletionQueueHandle;
-
     class CompletionQueue {
-        friend class CompletionQueueHandle;
+    public:
+        class Iterator;
+        friend class Iterator;
 
     private:
         unsigned *m_khead = nullptr;
@@ -33,66 +37,62 @@ namespace boros::impl {
         unsigned m_ring_mask = 0;
         unsigned m_ring_entries = 0;
         unsigned *m_kflags = nullptr;
-        unsigned *m_koverflow = nullptr; // TODO: Do we even need this?
-        CompletionEntry *m_entries = nullptr;
+        io_uring_cqe *m_entries = nullptr;
 
     public:
         ALWAYS_INLINE CompletionQueue() noexcept = default;
 
         auto Map(const io_uring_params &p, const Mmap &cq_mmap) noexcept -> void;
-    };
-
-    class CompletionQueueHandle {
-    private:
-        unsigned m_head;
-        unsigned m_tail;
-        CompletionQueue *m_queue;
 
     public:
-        explicit CompletionQueueHandle(CompletionQueue &queue) noexcept;
+        class Sentinel {
+            friend class Iterator;
+            unsigned m_tail;
 
-        ALWAYS_INLINE ~CompletionQueueHandle() noexcept {
-            // Ordering: Release store forms a happens-before relationship with the
-            // kernel's acquire load of khead. This ensures we are not accessing the
-            // Completion Queue slots we consumed anymore by the time the kernel is
-            // populating them again.
-            AtomicStore(m_queue->m_khead, m_head, std::memory_order_release);
-        }
+        public:
+            ALWAYS_INLINE explicit Sentinel(unsigned tail) noexcept : m_tail(tail) {}
+        };
 
-        ALWAYS_INLINE auto Synchronize() noexcept -> void {
-            // Ordering: Release store forms a happens-before relationship with the
-            // kernel's acquire load of khead. This ensures we are not accessing the
-            // Completion Queue slots we consumed anymore by the time the kernel is
-            // populating them again.
-            AtomicStore(m_queue->m_khead, m_head, std::memory_order_release);
+        class Iterator {
+        private:
+            unsigned m_head;
+            unsigned m_mask;
+            CompletionQueue *m_queue;
 
-            // Ordering: Acquire load forms a happens-before relationship with the
-            // kernel's release store of ktail. This ensures that the kernel has
-            // finished populating the reported slots before we start reading them.
-            m_tail = AtomicLoad(m_queue->m_ktail, std::memory_order_acquire);
-        }
+        public:
+            using value_type      = CompletionEntry;
+            using difference_type = std::ptrdiff_t;
 
-        ALWAYS_INLINE auto GetCapacity() const noexcept -> unsigned {
-            return m_queue->m_ring_entries;
-        }
+        public:
+            ALWAYS_INLINE explicit Iterator(CompletionQueue *queue) noexcept;
 
-        ALWAYS_INLINE auto GetSize() const noexcept -> unsigned {
-            return m_tail - m_head;
-        }
+            ~Iterator() noexcept;
 
-        ALWAYS_INLINE auto IsEmpty() const noexcept -> bool {
-            return this->GetSize() == 0;
-        }
+            ALWAYS_INLINE auto operator*() const noexcept -> CompletionEntry {
+                auto *cqe = &m_queue->m_entries[m_head & m_mask];
+                return CompletionEntry{cqe};
+            }
 
-        ALWAYS_INLINE auto IsFull() const noexcept -> bool {
-            return this->GetSize() == this->GetCapacity();
-        }
+            ALWAYS_INLINE auto operator++() noexcept -> Iterator& {
+                ++m_head;
+                return *this;
+            }
 
-        ALWAYS_INLINE auto PopUnchecked() -> CompletionEntry& {
-            auto &entry = m_queue->m_entries[m_head & m_queue->m_ring_mask];
-            ++m_head;
-            return entry;
-        }
+            ALWAYS_INLINE auto operator++(int) noexcept -> void {
+                ++*this;
+            }
+
+            ALWAYS_INLINE friend auto operator==(const Iterator &a, const Sentinel &b) noexcept -> bool {
+                return a.m_head == b.m_tail;
+            }
+
+            ALWAYS_INLINE friend auto operator!=(const Iterator &a, const Sentinel &b) noexcept -> bool {
+                return a.m_head != b.m_tail;
+            }
+        };
+
+        auto begin() noexcept -> Iterator;
+        auto end() const noexcept -> Sentinel;
     };
 
 }
