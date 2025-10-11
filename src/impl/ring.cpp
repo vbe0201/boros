@@ -242,7 +242,7 @@ namespace boros::impl {
     }
 
 	auto Ring::SubmitAndWait(unsigned want) const noexcept -> int {
-    	unsigned num_submit  = m_submission_queue.GetUnsubmittedEntries();
+    	unsigned num_submit  = m_submission_queue.Synchronize();
     	unsigned enter_flags = 0;
 
     	// When the Completion Queue overflows with IORING_FEAT_NODROP enabled, the

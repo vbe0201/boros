@@ -33,8 +33,8 @@ namespace boros::impl {
             return m_features;
         }
 
-        ALWAYS_INLINE auto GetSubmissionQueue() noexcept -> SubmissionQueueHandle {
-            return SubmissionQueueHandle{m_submission_queue};
+        ALWAYS_INLINE auto GetSubmissionQueue() noexcept -> SubmissionQueue& {
+            return m_submission_queue;
         }
 
         ALWAYS_INLINE auto GetCompletionQueue() noexcept -> CompletionQueue& {

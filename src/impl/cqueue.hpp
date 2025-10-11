@@ -40,7 +40,7 @@ namespace boros::impl {
         io_uring_cqe *m_entries = nullptr;
 
     public:
-        ALWAYS_INLINE CompletionQueue() noexcept = default;
+        CompletionQueue() noexcept = default;
 
         auto Map(const io_uring_params &p, const Mmap &cq_mmap) noexcept -> void;
 
