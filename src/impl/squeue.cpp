@@ -5,16 +5,16 @@
 
 namespace boros::impl {
 
-    SubmissionEntry::SubmissionEntry(io_uring_sqe* sqe) noexcept : m_sqe(sqe) {
+    SubmissionEntry::SubmissionEntry(io_uring_sqe* sqe) noexcept : Sqe(sqe) {
         // Clean potentially polluted entries from previous usage.
-        m_sqe->flags       = 0;
-        m_sqe->ioprio      = 0;
-        m_sqe->rw_flags    = 0;
-        m_sqe->buf_index   = 0;
-        m_sqe->personality = 0;
-        m_sqe->file_index  = 0;
-        m_sqe->addr3       = 0;
-        m_sqe->__pad2[0]   = 0;
+        Sqe->flags       = 0;
+        Sqe->ioprio      = 0;
+        Sqe->rw_flags    = 0;
+        Sqe->buf_index   = 0;
+        Sqe->personality = 0;
+        Sqe->file_index  = 0;
+        Sqe->addr3       = 0;
+        Sqe->__pad2[0]   = 0;
     }
 
     auto SubmissionQueue::Map(const io_uring_params &p, const Mmap &sq_mmap, const Mmap &sqe_mmap) noexcept -> void {

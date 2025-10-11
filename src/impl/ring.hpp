@@ -8,7 +8,7 @@
 
 namespace boros::impl {
 
-    class Ring {
+    class IoRing {
     private:
         SubmissionQueue m_submission_queue;
         CompletionQueue m_completion_queue;
@@ -22,8 +22,8 @@ namespace boros::impl {
         Mmap m_cq_mmap;
 
     public:
-        Ring() noexcept = default;
-        ~Ring() noexcept;
+        IoRing() noexcept = default;
+        ~IoRing() noexcept;
 
         /// Creates a new io_uring instance with the given number of submission
         /// queue entries and the configuration parameters.

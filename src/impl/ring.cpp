@@ -37,14 +37,14 @@ namespace boros::impl {
 
 	}
 
-    auto Ring::RegisterRaw(unsigned int opcode, const void* arg, unsigned int num_args) const noexcept -> int {
+    auto IoRing::RegisterRaw(unsigned int opcode, const void* arg, unsigned int num_args) const noexcept -> int {
         if (m_registered) {
             opcode |= IORING_REGISTER_USE_REGISTERED_RING;
         }
         return RegisterRing(m_enter_fd, opcode, arg, num_args);
     }
 
-    auto Ring::Create(unsigned entries, io_uring_params& p) noexcept -> int {
+    auto IoRing::Create(unsigned entries, io_uring_params& p) noexcept -> int {
         // Allocate a file descriptor for the io_uring we're going to manage.
 		int fd = SetupRing(entries, &p);
 		if (fd < 0) [[unlikely]] {
@@ -60,7 +60,7 @@ namespace boros::impl {
         return 0;
     }
 
-    auto Ring::CreateWithFile(int fd, io_uring_params& p) noexcept -> int {
+    auto IoRing::CreateWithFile(int fd, io_uring_params& p) noexcept -> int {
         Mmap sq_mmap;
         Mmap cq_mmap;
         Mmap sqe_mmap;
@@ -105,7 +105,7 @@ namespace boros::impl {
         return 0;
     }
 
-    Ring::~Ring() noexcept {
+    IoRing::~IoRing() noexcept {
         // Destroy the rings. From here, we cannot access the queues anymore. This is
         // done explicitly to ensure the mappings are gone before the handle is closed.
         m_sq_mmap.Destroy();
@@ -123,7 +123,7 @@ namespace boros::impl {
         }
     }
 
-    auto Ring::RegisterFilesSparse(unsigned num_files) const noexcept -> int {
+    auto IoRing::RegisterFilesSparse(unsigned num_files) const noexcept -> int {
         io_uring_rsrc_register reg{};
         reg.nr    = num_files;
         reg.flags = IORING_RSRC_REGISTER_SPARSE;
@@ -131,19 +131,19 @@ namespace boros::impl {
         return this->RegisterRaw(IORING_REGISTER_FILES2, &reg, sizeof(reg));
     }
 
-    auto Ring::UnregisterFiles() const noexcept -> int {
+    auto IoRing::UnregisterFiles() const noexcept -> int {
         return this->RegisterRaw(IORING_UNREGISTER_FILES, nullptr, 0);
     }
 
-	auto Ring::RegisterProbe(io_uring_probe* probe) const noexcept -> int {
+	auto IoRing::RegisterProbe(io_uring_probe* probe) const noexcept -> int {
 		return this->RegisterRaw(IORING_REGISTER_PROBE, probe, 256);
 	}
 
-	auto Ring::Enable() const noexcept -> int {
+	auto IoRing::Enable() const noexcept -> int {
 		return this->RegisterRaw(IORING_REGISTER_ENABLE_RINGS, nullptr, 0);
 	}
 
-	auto Ring::RegisterRingFd() noexcept -> int {
+	auto IoRing::RegisterRingFd() noexcept -> int {
 		io_uring_rsrc_update upd{};
     	upd.data   = m_ring_fd;
     	upd.offset = -1U;
@@ -161,7 +161,7 @@ namespace boros::impl {
     	return res;
 	}
 
-	auto Ring::UnregisterRingFd() noexcept -> int {
+	auto IoRing::UnregisterRingFd() noexcept -> int {
 		io_uring_rsrc_update upd{};
     	upd.offset = m_enter_fd;
 
@@ -178,7 +178,7 @@ namespace boros::impl {
     	return res;
 	}
 
-	auto Ring::CloseRingFd() noexcept -> int {
+	auto IoRing::CloseRingFd() noexcept -> int {
     	if ((m_features & IORING_FEAT_REG_REG_RING) == 0) [[unlikely]] {
     		return -EOPNOTSUPP;
     	}
@@ -195,18 +195,18 @@ namespace boros::impl {
     	return 1;
 	}
 
-	auto Ring::RegisterBufRing(io_uring_buf_reg *reg) const noexcept -> int {
+	auto IoRing::RegisterBufRing(io_uring_buf_reg *reg) const noexcept -> int {
 	    return this->RegisterRaw(IORING_REGISTER_PBUF_RING, reg, 1);
     }
 
-	auto Ring::UnregisterBufRing(int bgid) const noexcept -> int {
+	auto IoRing::UnregisterBufRing(int bgid) const noexcept -> int {
 	    io_uring_buf_reg reg{};
     	reg.bgid = bgid;
 
     	return this->RegisterRaw(IORING_UNREGISTER_PBUF_RING, &reg, 1);
     }
 
-	auto Ring::GetBufRingHead(int buf_group, std::uint16_t *head) const noexcept -> int {
+	auto IoRing::GetBufRingHead(int buf_group, std::uint16_t *head) const noexcept -> int {
 	    io_uring_buf_status status{};
     	status.buf_group = buf_group;
 
@@ -219,7 +219,7 @@ namespace boros::impl {
     	return 0;
     }
 
-	auto Ring::SubmitAndWait(unsigned want) const noexcept -> int {
+	auto IoRing::SubmitAndWait(unsigned want) const noexcept -> int {
     	unsigned num_submit  = m_submission_queue.Synchronize();
     	unsigned enter_flags = 0;
 
