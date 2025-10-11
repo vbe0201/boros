@@ -1,5 +1,5 @@
 // This source file is part of the boros project.
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: ISC
 
 #include "cqueue.hpp"
 
