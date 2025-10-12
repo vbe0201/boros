@@ -8,6 +8,8 @@
 
 namespace boros::impl {
 
+    /// An io_uring instance which can be used to perform I/O in the kernel.
+    /// Objects should only ever be driven from a single thread.
     class IoRing {
     private:
         SubmissionQueue m_submission_queue;
