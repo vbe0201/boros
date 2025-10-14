@@ -6,15 +6,13 @@ license-files = ["LICENSE"]
 description = "A library for asynchronous I/O with io_uring"
 readme = "README.md"
 authors = [{ name = "Valentin B.", email = "valentin.be@protonmail.com" }]
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 classifiers = [
     "Development Status :: 1 - Planning",
     "Intended Audience :: Developers",
     "Operating System :: POSIX :: Linux",
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
@@ -29,4 +27,4 @@ build-backend = "scikit_build_core.build"
 [tool.scikit-build]
 minimum-version = "build-system.requires"
 build-dir = "build/{wheel_tag}"
-wheel.py-api = "cp310"
+wheel.py-api = "cp312"

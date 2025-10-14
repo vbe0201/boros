@@ -45,7 +45,7 @@
           packages = with pkgs; [
             cmake
             ninja
-            python310
+            python312
             uv
           ];
         };
