@@ -27,8 +27,7 @@ namespace boros::impl {
             auto *tp = Py_TYPE(self);
             auto *tp_alloc = reinterpret_cast<allocfunc>(PyType_GetSlot(tp, Py_tp_alloc));
 
-            auto *ring = &g_current_io_ring;
-            if (!ring->IsCreated()) {
+            if (!g_current_io_ring.IsCreated()) {
                 PyErr_SetString(PyExc_RuntimeError,
                     "No runtime is currently active on this thread");
                 return nullptr;
@@ -36,7 +35,7 @@ namespace boros::impl {
 
             auto *ctx = reinterpret_cast<RuntimeContextObj*>(tp_alloc(tp, 0));
             if (self != nullptr) {
-                ctx->ring = ring;
+                ctx->ring = &g_current_io_ring;
             }
 
             return reinterpret_cast<PyObject*>(ctx);
