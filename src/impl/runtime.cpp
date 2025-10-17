@@ -13,13 +13,17 @@ namespace boros::impl {
 
     namespace {
 
-        extern "C" auto RuntimeContextNew(PyTypeObject *Py_UNUSED(tp), PyObject *Py_UNUSED(args), PyObject *Py_UNUSED(kwds)) noexcept -> PyObject* {
+        extern "C" auto RuntimeContextNew(PyTypeObject *tp, PyObject *args, PyObject *kwds) noexcept -> PyObject* {
+            BOROS_UNUSED(tp, args, kwds);
+
             PyErr_SetString(PyExc_TypeError,
                 "Cannot instantiate RuntimeContext directly; use RuntimeContext.get() instead");
             return nullptr;
         }
 
-        extern "C" auto RuntimeContextGet(PyObject *self, PyObject *Py_UNUSED(args)) noexcept -> PyObject* {
+        extern "C" auto RuntimeContextGet(PyObject *self, PyObject *args) noexcept -> PyObject* {
+            BOROS_UNUSED(args);
+
             auto *tp = Py_TYPE(self);
             auto *tp_alloc = reinterpret_cast<allocfunc>(PyType_GetSlot(tp, Py_tp_alloc));
 

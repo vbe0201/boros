@@ -3,6 +3,10 @@
 
 #include <Python.h>
 
+#include "runtime.hpp"
+
+using namespace boros::impl;
+
 namespace {
 
     constinit PyMethodDef g_impl_methods[] = {
@@ -24,5 +28,12 @@ namespace {
 }
 
 PyMODINIT_FUNC PyInit__impl() {
-    return PyModule_Create(&g_impl_module);
+    auto *module = PyModule_Create(&g_impl_module);
+
+    auto *driver = RuntimeContextObj::Register(module);
+    if (driver == nullptr) {
+        return nullptr;
+    }
+
+    return module;
 }
