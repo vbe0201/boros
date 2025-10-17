@@ -25,7 +25,6 @@ namespace boros::impl {
 
             auto LinkNext(ListLink *link) noexcept -> void;
 
-            auto Unlink(ListLink *last) noexcept -> void;
             auto Unlink() noexcept -> void;
         };
 

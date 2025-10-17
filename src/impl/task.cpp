@@ -34,16 +34,10 @@ namespace boros::impl {
         Next = link;
     }
 
-    auto Task::ListLink::Unlink(ListLink* last) noexcept -> void {
-        auto *last_prev = last->Prev;
-        Prev->Next = last;
-        last_prev->Next = this;
-        last->Prev = Prev;
-        Prev = last_prev;
-    }
-
     auto Task::ListLink::Unlink() noexcept -> void {
-        this->Unlink(Next);
+        Prev->Next = Next;
+        Next->Prev = Prev;
+        Prev = Next = this;
     }
 
     auto Task::List::ToLink(Task& v) noexcept -> ListLink* {
