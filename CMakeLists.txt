@@ -1,11 +1,5 @@
 cmake_minimum_required(VERSION 3.26 FATAL_ERROR)
 
-# TODO: Remove
-set(SKBUILD_PROJECT_NAME "boros")
-set(SKBUILD_PROJECT_VERSION "0.1.0")
-set(SKBUILD_SABI_COMPONENT Development.SABIModule)
-set(SKBUILD_SABI_VERSION 3.12)
-
 ######################
 ## Project settings ##
 ######################
@@ -38,6 +32,7 @@ find_package(Python COMPONENTS
 Python_add_library(_impl MODULE
     src/impl/cqueue.hpp
     src/impl/ring.hpp
+    src/impl/runtime.hpp
     src/impl/squeue.hpp
     src/impl/task.hpp
     src/impl/utils.hpp
@@ -45,6 +40,7 @@ Python_add_library(_impl MODULE
     src/impl/cqueue.cpp
     src/impl/module.cpp
     src/impl/ring.cpp
+    src/impl/runtime.cpp
     src/impl/squeue.cpp
     src/impl/task.cpp
     src/impl/utils.cpp

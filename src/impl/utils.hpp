@@ -55,10 +55,6 @@ namespace boros::impl {
         }
     };
 
-    // We exclusively use the following functions for atomic accesses so that we
-    // never have atomic_refs preventing us from accessing a value without any
-    // synchronization.
-
     /// Atomically loads the value from ``ptr`` with a given ordering.
     ALWAYS_INLINE auto AtomicLoad(unsigned *ptr, std::memory_order order) noexcept -> unsigned {
         return std::atomic_ref(*ptr).load(order);

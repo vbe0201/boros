@@ -35,6 +35,11 @@ namespace boros::impl {
         /// and the configuration parameters.
         auto CreateWithFile(int fd, io_uring_params &p) noexcept -> int;
 
+        /// Indicates whether the io_uring instance has already been created.
+        ALWAYS_INLINE auto IsCreated() const noexcept -> bool {
+            return m_sq_mmap.IsMapped();
+        }
+
         /// Gets the configuration flags of the ring.
         ALWAYS_INLINE auto GetFlags() const noexcept -> unsigned {
             return m_flags;
