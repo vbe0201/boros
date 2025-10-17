@@ -13,6 +13,9 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# Enable language servers to provide code completion for the project.
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 # io_uring is a Linux-only API, so no point in building for other platforms.
 if(NOT ${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
     message(FATAL_ERROR "boros can only be built for Linux targets.")

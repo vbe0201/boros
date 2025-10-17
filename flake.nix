@@ -43,6 +43,7 @@
 
         devShells.default = pkgs.mkShell {
           packages = with pkgs; [
+            clang-tools
             cmake
             ninja
             python312
