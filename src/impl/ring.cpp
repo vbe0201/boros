@@ -38,10 +38,15 @@ namespace boros::impl {
 	}
 
     auto IoRing::RegisterRaw(unsigned int opcode, const void* arg, unsigned int num_args) const noexcept -> int {
-        if (m_registered) {
+        int fd;
+        if (m_registered && (m_features & IORING_FEAT_REG_REG_RING) != 0) {
             opcode |= IORING_REGISTER_USE_REGISTERED_RING;
+            fd = m_enter_fd;
+        } else {
+            fd = m_ring_fd;
         }
-        return RegisterRing(m_enter_fd, opcode, arg, num_args);
+
+        return RegisterRing(fd, opcode, arg, num_args);
     }
 
     auto IoRing::Create(unsigned entries, io_uring_params& p) noexcept -> int {
