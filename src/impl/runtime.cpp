@@ -60,9 +60,6 @@ namespace boros::impl {
             // This enables internal performance optimizations since our IoRing
             // is only designed for single-threaded usage anyway.
             params.flags |= IORING_SETUP_SINGLE_ISSUER;
-            // Create rings in disabled state by default. Submissions will only
-            // be accepted after a ring instance has been explicitly enabled.
-            params.flags |= IORING_SETUP_R_DISABLED;
 
             // If requested, share the async worker thread backend of an existing
             // ring identified by its file descriptor with this ring instance.
