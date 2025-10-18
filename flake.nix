@@ -25,27 +25,26 @@
         in pkgs.python3Packages.buildPythonPackage {
           pname = boros_toml.project.name;
           version = boros_toml.project.version;
-          format = "pyproject";
+          pyproject = true;
           src = ./.;
 
-          nativeBuildInputs = with pkgs; [
-            cmake
-            ninja
-            python3Packages.scikit-build-core
+          build-system = with pkgs; [
+            python3Packages.meson-python
           ];
 
-          dontUseCmakeConfigure = true;
-          dontUseCmakeBuild = true;
-          dontUseCmakeInstall = true;
+          nativeBuildInputs = with pkgs; [
+            pkg-config
+          ];
 
-          doCheck = false;
+          pythonImportsCheck = [boros_toml.project.name];
         };
 
         devShells.default = pkgs.mkShell {
           packages = with pkgs; [
             clang-tools
-            cmake
+            meson
             ninja
+            pkg-config
             python312
             uv
           ];

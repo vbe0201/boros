@@ -18,6 +18,8 @@ namespace boros::impl {
         // cq_entries must be a power of two and greater than sq_entries
         // TODO: sqpoll
         extern "C" auto RuntimeContextEnter(PyObject *self, PyObject *args, PyObject *kwds) noexcept -> PyObject* {
+            BOROS_UNUSED(self);
+
             constexpr const char *kwlist[] = {"sq_entries", "cq_entries", "wq_fd", nullptr};
 
             unsigned sqs, cqs = 0;
