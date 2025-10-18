@@ -46,9 +46,18 @@ namespace boros::impl {
 
     auto IoRing::Create(unsigned entries, io_uring_params& p) noexcept -> int {
         // Allocate a file descriptor for the io_uring we're going to manage.
+        // Try to configure the instance without an SQARRAY first...
+        p.flags |= IORING_SETUP_NO_SQARRAY;
 		int fd = SetupRing(entries, &p);
-		if (fd < 0) [[unlikely]] {
+		if (fd < 0 && fd != -EINVAL) [[unlikely]] {
 			return fd;
+		}
+
+		// ...and if that didn't work, fall back to having one for old kernels.
+		p.flags &= ~IORING_SETUP_NO_SQARRAY;
+		fd = SetupRing(entries, &p);
+		if (fd < 0) [[unlikely]] {
+		    return fd;
 		}
 
         // Try to create the ring instance. If we fail, dispose of the file.
