@@ -2,19 +2,23 @@
 // SPDX-License-Identifier: ISC
 
 #include "squeue.hpp"
+#include "utils.hpp"
 
 namespace boros::impl {
 
-    SubmissionEntry::SubmissionEntry(io_uring_sqe* sqe) noexcept : Sqe(sqe) {
-        // Clean potentially polluted entries from previous usage.
-        Sqe->flags       = 0;
-        Sqe->ioprio      = 0;
-        Sqe->rw_flags    = 0;
-        Sqe->buf_index   = 0;
-        Sqe->personality = 0;
-        Sqe->file_index  = 0;
-        Sqe->addr3       = 0;
-        Sqe->__pad2[0]   = 0;
+    namespace {
+
+        ALWAYS_INLINE auto ClearSqe(io_uring_sqe *sqe) noexcept -> void {
+            sqe->flags       = 0;
+            sqe->ioprio      = 0;
+            sqe->rw_flags    = 0;
+            sqe->buf_index   = 0;
+            sqe->personality = 0;
+            sqe->file_index  = 0;
+            sqe->addr3       = 0;
+            sqe->__pad2[0]   = 0;
+        }
+
     }
 
     auto SubmissionQueue::Map(const io_uring_params &p, const Mmap &sq_mmap, const Mmap &sqe_mmap) noexcept -> void {
@@ -71,10 +75,11 @@ namespace boros::impl {
         return (m_ring_entries - m_local_tail - head) > num_submissions;
     }
 
-    auto SubmissionQueue::PushUnchecked() noexcept -> SubmissionEntry {
+    auto SubmissionQueue::PushUnchecked() noexcept -> io_uring_sqe* {
         auto *sqe = &m_entries[m_local_tail & m_ring_mask];
         ++m_local_tail;
-        return SubmissionEntry{sqe};
+        ClearSqe(sqe);
+        return sqe;
     }
 
 }

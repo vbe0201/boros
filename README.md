@@ -2,8 +2,8 @@
 
 boros is a Python library for asynchronous I/O based on the `io_uring` API.
 
-It features a friendly API for writing concurrent applications with async/await
-with a focus on performance and usability.
+It features a friendly API for writing concurrent applications based on
+async/await with a focus on performance and usability.
 
 > [!WARNING]
 >

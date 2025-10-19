@@ -1,6 +1,7 @@
 boros_cpp_sources = [
     'cqueue.cpp',
     'module.cpp',
+    'operation.cpp',
     'ring.cpp',
     'runtime.cpp',
     'squeue.cpp',

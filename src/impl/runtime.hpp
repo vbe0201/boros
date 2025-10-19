@@ -17,6 +17,9 @@ namespace boros::impl {
         Runtime() noexcept = default;
         ~Runtime() noexcept = default;
 
+        /// Gets the runtime instance for the current thread.
+        static auto Get() noexcept -> Runtime&;
+
         /// Creates a new runtime instance by initializing all resources
         /// and setting up an io_uring instance from the given parameters.
         auto Create(unsigned sq_entries, io_uring_params &p) noexcept -> PyObject*;
@@ -32,8 +35,8 @@ namespace boros::impl {
     };
 
     /// A Python structure providing access to the current runtime state.
-    /// This should be the preferred way of interfacing with the runtime.
-    extern "C" struct RuntimeContextObj {
+    /// This should be the preferred way of interacting with the runtime.
+    struct RuntimeContextObj {
         PyObject_HEAD
         Runtime *rt;
 

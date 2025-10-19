@@ -3,6 +3,16 @@
 from typing import Self
 
 
+class Operation:
+    """
+    An I/O operation on the runtime.
+
+    Operations are a low-level primitive which allows Python code to build
+    io_uring submissions and idiomatically await their completion from a
+    coroutine function.
+    """
+    ...
+
 class RuntimeContext:
     """
     The context of the currently active runtime instance.

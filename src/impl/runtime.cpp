@@ -14,6 +14,10 @@ namespace boros::impl {
 
     }
 
+    auto Runtime::Get() noexcept -> Runtime& {
+        return g_current_runtime;
+    }
+
     auto Runtime::Create(unsigned sq_entries, io_uring_params &p) noexcept -> PyObject* {
         if (int res = m_ring.Create(sq_entries, p); res < 0) [[unlikely]] {
             errno = -res;
@@ -42,8 +46,8 @@ namespace boros::impl {
 
     namespace {
 
-        extern "C" auto RuntimeContextNew(PyTypeObject *cls, PyObject *args, PyObject *kwds) noexcept -> PyObject* {
-            BOROS_UNUSED(cls, args, kwds);
+        extern "C" auto RuntimeContextNew(PyTypeObject *tp, PyObject *args, PyObject *kwds) noexcept -> PyObject* {
+            BOROS_UNUSED(tp, args, kwds);
 
             PyErr_SetString(PyExc_TypeError,
                 "Cannot instantiate RuntimeContext directly; use RuntimeContext.get() instead");

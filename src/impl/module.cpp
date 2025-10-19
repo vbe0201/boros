@@ -3,6 +3,7 @@
 
 #include <Python.h>
 
+#include "operation.hpp"
 #include "runtime.hpp"
 
 using namespace boros::impl;
@@ -30,8 +31,13 @@ namespace {
 PyMODINIT_FUNC PyInit__impl() {
     auto *module = PyModule_Create(&g_impl_module);
 
-    auto *driver = RuntimeContextObj::Register(module);
-    if (driver == nullptr) {
+    auto *operation = OperationObj::Register(module);
+    if (operation == nullptr) [[unlikely]] {
+        return nullptr;
+    }
+
+    auto *runtime_context = RuntimeContextObj::Register(module);
+    if (runtime_context == nullptr) [[unlikely]] {
         return nullptr;
     }
 
