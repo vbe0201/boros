@@ -37,7 +37,6 @@ namespace boros::impl {
             PyErr_SetFromErrno(PyExc_OSError);
             return nullptr;
         }
-
         Py_RETURN_NONE;
     }
 
