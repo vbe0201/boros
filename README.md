@@ -17,7 +17,7 @@ boros targets Linux kernels starting from version 6.1 and newer.
 The implementation makes an effort to be correct even when run on older
 kernels, but fatal exceptions will be raised.
 
-Likewise, we will support many of the more recent `io_uring` features, with
+Likewise, we will support many of the more recent `io_uring` features with
 a documentation hint to the required kernel version. Attempting to use any
 library features with an outdated kernel will also result in exceptions
 being raised.
@@ -55,5 +55,5 @@ uv sync --reinstall-package boros
 ## License
 
 <sup>
-This library is licensed under the terms of the <a href="LICENSE">ISC License<\a>.
+This library is licensed under the terms of the <a href="LICENSE">ISC License</a>.
 </sup>
