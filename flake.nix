@@ -22,14 +22,14 @@
 
         packages.boros = let
           boros_toml = builtins.fromTOML (builtins.readFile ./pyproject.toml);
-        in pkgs.python3Packages.buildPythonPackage {
+        in pkgs.python312Packages.buildPythonPackage {
           pname = boros_toml.project.name;
           version = boros_toml.project.version;
           pyproject = true;
           src = ./.;
 
           build-system = with pkgs; [
-            python3Packages.meson-python
+            python312Packages.meson-python
           ];
 
           nativeBuildInputs = with pkgs; [
