@@ -5,6 +5,7 @@
 
 #include "cqueue.hpp"
 #include "squeue.hpp"
+#include "utils.hpp"
 
 namespace boros::impl {
 
@@ -48,6 +49,12 @@ namespace boros::impl {
         /// Gets the supported io_uring feature flags reported by the kernel.
         ALWAYS_INLINE auto GetFeatures() const noexcept -> unsigned {
             return m_features;
+        }
+
+        /// Gets the file descriptor associated with the io_uring instance,
+        /// or -1 if it was closed already.
+        ALWAYS_INLINE auto GetRingFd() const noexcept -> int {
+            return m_ring_fd;
         }
 
         /// Gets a handle to the submission queue of this ring instance.

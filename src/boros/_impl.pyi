@@ -56,3 +56,22 @@ class RuntimeContext:
         :raises RuntimeError: When called outside a runtime execution environment.
         """
         ...
+
+    def get_ring_fd(self) -> int:
+        """
+        Gets the file descriptor of the associated io_uring instance.
+
+        :returns: The file descriptor, or -1 if it was closed.
+        """
+        ...
+
+    def enable_ring(self):
+        """
+        Enables the associated io_uring instance.
+
+        This must be done after calling :meth:`enter` before any I/O operations
+        can be submitted.
+
+        :raises OSError: Failed to enable the ring in the kernel.
+        """
+        ...

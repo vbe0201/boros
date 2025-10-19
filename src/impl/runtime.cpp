@@ -2,16 +2,54 @@
 // SPDX-License-Identifier: ISC
 
 #include "runtime.hpp"
+#include "object.h"
+#include "pyerrors.h"
+#include "utils.hpp"
 
 namespace boros::impl {
 
     namespace {
 
-        thread_local IoRing g_current_io_ring;
+        thread_local Runtime g_current_runtime;
 
     }
 
+    auto Runtime::Create(unsigned sq_entries, io_uring_params &p) noexcept -> PyObject* {
+        if (int res = m_ring.Create(sq_entries, p); res < 0) [[unlikely]] {
+            errno = -res;
+            PyErr_SetFromErrno(PyExc_OSError);
+            return nullptr;
+        }
+        Py_RETURN_NONE;
+    }
+
+    bool Runtime::IsCreated() const noexcept {
+        return m_ring.IsCreated();
+    }
+
+    auto Runtime::GetRingFd() const noexcept -> PyObject* {
+        return PyLong_FromLong(m_ring.GetRingFd());
+    }
+
+    auto Runtime::EnableRing() const noexcept -> PyObject* {
+        if (int res = m_ring.Enable(); res < 0) [[unlikely]] {
+            errno = -res;
+            PyErr_SetFromErrno(PyExc_OSError);
+            return nullptr;
+        }
+
+        Py_RETURN_NONE;
+    }
+
     namespace {
+
+        extern "C" auto RuntimeContextNew(PyTypeObject *cls, PyObject *args, PyObject *kwds) noexcept -> PyObject* {
+            BOROS_UNUSED(cls, args, kwds);
+
+            PyErr_SetString(PyExc_TypeError,
+                "Cannot instantiate RuntimeContext directly; use RuntimeContext.get() instead");
+            return nullptr;
+        }
 
         // Kernel 6.1+ is required.
         // sq_entries must be a power of two
@@ -26,7 +64,7 @@ namespace boros::impl {
             int wq = -1;
             io_uring_params params{};
 
-            if (g_current_io_ring.IsCreated()) {
+            if (g_current_runtime.IsCreated()) {
                 PyErr_SetString(PyExc_RuntimeError,
                     "Runtime context is already set up in the current thread");
                 return nullptr;
@@ -70,41 +108,49 @@ namespace boros::impl {
                 params.wq_fd = wq;
             }
 
-            // Try to initialize the io_uring instance, or raise an exception.
-            if (int res = g_current_io_ring.Create(sqs, params); res < 0) [[unlikely]] {
-                errno = -res;
-                PyErr_SetFromErrno(PyExc_OSError);
-                return nullptr;
-            }
-
-            Py_RETURN_NONE;
+            return g_current_runtime.Create(sqs, params);
         }
 
         extern "C" auto RuntimeContextGet(PyObject *cls, PyObject *args) noexcept -> PyObject* {
             BOROS_UNUSED(args);
 
-            if (!g_current_io_ring.IsCreated()) {
+            if (!g_current_runtime.IsCreated()) {
                 PyErr_SetString(PyExc_RuntimeError,
                     "No runtime is currently active on this thread");
                 return nullptr;
             }
 
-            auto *ctx = reinterpret_cast<RuntimeContextObj*>(PyObject_CallNoArgs(cls));
+            auto *tp = reinterpret_cast<PyTypeObject*>(cls);
+            auto *tp_alloc = reinterpret_cast<allocfunc>(PyType_GetSlot(tp, Py_tp_alloc));
+
+            auto *ctx = reinterpret_cast<RuntimeContextObj*>(tp_alloc(tp, 0));
             if (ctx != nullptr) [[likely]] {
-                ctx->ring = &g_current_io_ring;
+                ctx->rt = &g_current_runtime;
             }
 
             return reinterpret_cast<PyObject*>(ctx);
         }
 
+        extern "C" auto RuntimeContextGetRingFd(PyObject *self, PyObject *args) noexcept -> PyObject* {
+            BOROS_UNUSED(args);
+            return reinterpret_cast<RuntimeContextObj*>(self)->rt->GetRingFd();
+        }
+
+        extern "C" auto RuntimeContextEnableRing(PyObject *self, PyObject *args) noexcept -> PyObject* {
+            BOROS_UNUSED(args);
+            return reinterpret_cast<RuntimeContextObj*>(self)->rt->EnableRing();
+        }
+
         PyMethodDef g_runtime_context_methods[] = {
-            {"enter", reinterpret_cast<PyCFunction>(&RuntimeContextEnter), METH_CLASS | METH_VARARGS | METH_KEYWORDS, ""},
-            {"get", &RuntimeContextGet, METH_CLASS | METH_NOARGS, ""},
+            {"enter", reinterpret_cast<PyCFunction>(&RuntimeContextEnter), METH_CLASS | METH_VARARGS | METH_KEYWORDS, nullptr},
+            {"get", &RuntimeContextGet, METH_CLASS | METH_NOARGS, nullptr},
+            {"get_ring_fd", &RuntimeContextGetRingFd, METH_NOARGS, nullptr},
+            {"enable_ring", &RuntimeContextEnableRing, METH_NOARGS, nullptr},
             {nullptr, nullptr, 0, nullptr}
         };
 
         PyType_Slot g_runtime_context_slots[] = {
-            {Py_tp_new, reinterpret_cast<void*>(&PyType_GenericNew)},
+            {Py_tp_new, reinterpret_cast<void*>(&RuntimeContextNew)},
             {Py_tp_methods, g_runtime_context_methods},
             {0, nullptr}
         };
