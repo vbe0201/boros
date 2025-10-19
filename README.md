@@ -26,7 +26,8 @@ being raised.
 
 If you want to work on boros directly, it is recommended to set up a development
 environment with [Meson](https://mesonbuild.com/), [Python 3.12+](https://www.python.org/),
-and [uv](https://github.com/astral-sh/uv).
+and [uv](https://github.com/astral-sh/uv). If you use [Nix](https://nixos.org/),
+a flake with a development shell and a `boros` package output is provided.
 
 If you want [clangd](https://clangd.llvm.org/) language server support for the
 C++ portions of the codebase, run the following command from the project root:
