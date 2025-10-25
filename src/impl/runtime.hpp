@@ -40,6 +40,9 @@ namespace boros {
         /// Enters the runtime context on the current thread.
         static auto Enter(PyTypeObject *tp, unsigned long sqes, unsigned long cqes, long wq_fd) noexcept -> RuntimeContext*;
 
+        /// Exits the runtime context on the current thread.
+        static auto Exit(std::nullptr_t) noexcept -> void;
+
         /// Gets the associated runtime instance for this thread.
         static auto Get(PyTypeObject *tp) noexcept -> RuntimeContext*;
 

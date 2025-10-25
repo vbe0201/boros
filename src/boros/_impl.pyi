@@ -54,6 +54,16 @@ class RuntimeContext:
         """
         ...
 
+    @staticmethod
+    def exit():
+        """
+        Exits the runtime context on the current thread.
+        
+        This is a no-op if no runtime context is established. :meth:`enter` can
+        be called again afterwards to establish a new context anytime.
+        """
+        ...
+
     @classmethod
     def get(cls) -> Self:
         """

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: ISC
 
 #include "runtime.hpp"
+#include "ceval.h"
 #include "macros.hpp"
 
 namespace boros {
@@ -100,6 +101,10 @@ namespace boros {
         return self;
     }
 
+    auto RuntimeContext::Exit(std::nullptr_t) noexcept -> void {
+        g_current_runtime.Destroy();
+    }
+
     auto RuntimeContext::Get(PyTypeObject *tp) noexcept -> RuntimeContext* {
         if (!g_current_runtime.IsCreated()) {
             PyErr_SetString(PyExc_RuntimeError,
@@ -129,6 +134,7 @@ namespace boros {
 
         auto g_runtime_context_methods = python::MethodTable(
             python::Method<&RuntimeContext::Enter>("enter"),
+            python::Method<&RuntimeContext::Exit>("exit"),
             python::Method<&RuntimeContext::Get>("get"),
             python::Method<&RuntimeContext::GetRingFd>("get_ring_fd"),
             python::Method<&RuntimeContext::EnableRing>("enable_ring")
