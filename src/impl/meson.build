@@ -2,6 +2,7 @@ boros_cpp_sources = [
     'cqueue.cpp',
     'module.cpp',
     'operation.cpp',
+    'python_utils.cpp',
     'ring.cpp',
     'runtime.cpp',
     'squeue.cpp',

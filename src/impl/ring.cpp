@@ -7,7 +7,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-namespace boros::impl {
+namespace boros {
 
 	namespace {
 
@@ -119,22 +119,25 @@ namespace boros::impl {
         return 0;
     }
 
-    IoRing::~IoRing() noexcept {
-        // Destroy the rings. From here, we cannot access the queues anymore. This is
-        // done explicitly to ensure the mappings are gone before the handle is closed.
+    auto IoRing::Destroy() noexcept -> void {
+        // Unmap the ring queues.
         m_sq_mmap.Destroy();
         m_sqe_mmap.Destroy();
         m_cq_mmap.Destroy();
 
         // If we have a direct descriptor, free its slot.
         if (m_registered) {
-	        this->UnregisterRingFd();
+            this->UnregisterRingFd();
         }
 
         // Dispose of the ring file descriptor, if we have one.
         if (m_ring_fd != -1) {
             close(m_ring_fd);
         }
+    }
+
+    IoRing::~IoRing() noexcept {
+        this->Destroy();
     }
 
     auto IoRing::RegisterFilesSparse(unsigned num_files) const noexcept -> int {

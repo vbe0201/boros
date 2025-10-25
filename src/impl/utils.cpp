@@ -5,7 +5,7 @@
 
 #include <cerrno>
 
-namespace boros::impl {
+namespace boros {
 
     Mmap::Mmap(Mmap &&rhs) noexcept : Address(rhs.Address), Size(rhs.Size) {
         rhs.Address = nullptr;

@@ -7,7 +7,7 @@
 
 #include "utils.hpp"
 
-namespace boros::impl {
+namespace boros {
 
     /// Handle to the io_uring submission queue.
     /// This is used to enqueue operations to be performed by the kernel.

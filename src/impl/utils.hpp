@@ -9,18 +9,9 @@
 
 #include <sys/mman.h>
 
-/// Strong hint to the compiler to always inline a function.
-#define ALWAYS_INLINE __attribute__((always_inline)) inline
+#include "macros.hpp"
 
-/// Discards unused variables without side effects.
-#define BOROS_UNUSED(...) ::boros::impl::UnusedImpl(__VA_ARGS__)
-
-namespace boros::impl {
-
-    template <typename... Args>
-    ALWAYS_INLINE void UnusedImpl(Args &&...args) noexcept {
-        (static_cast<void>(args), ...);
-    }
+namespace boros {
 
     /// A handle to a memory-mapped region.
     ///

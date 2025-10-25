@@ -3,7 +3,7 @@
 
 #include "cqueue.hpp"
 
-namespace boros::impl {
+namespace boros {
 
     auto CompletionQueue::Map(const io_uring_params &p, const Mmap &cq_mmap) noexcept -> void {
         m_khead        = cq_mmap.Offset<unsigned>(p.cq_off.head);

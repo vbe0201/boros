@@ -32,7 +32,7 @@ class RuntimeContext:
     """
 
     @classmethod
-    def enter(cls, sq_entries: int, *, cq_entries: int = 0, wq_fd: int = -1):
+    def enter(cls, sq_entries: int, cq_entries: int, wq_fd: int) -> Self:
         """
         Enters the runtime context in the current thread.
 
@@ -49,6 +49,7 @@ class RuntimeContext:
                       -1, a new backend will be created for this ring.
         :raises OSError: Invalid arguments were supplied, or the kernel could
                          not create an io_uring instance.
+        :returns: The newly established RuntimeContext instance.
         :raises RuntimeError: A runtime is already active in the current thread.
         """
         ...

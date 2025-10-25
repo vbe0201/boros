@@ -6,7 +6,7 @@
 #include <cassert>
 #include <cstddef>
 
-namespace boros::impl {
+namespace boros {
 
     Task::ListLink::ListLink() noexcept : Prev(this), Next(this) {}
 

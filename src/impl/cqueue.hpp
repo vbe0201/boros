@@ -7,7 +7,7 @@
 
 #include "utils.hpp"
 
-namespace boros::impl {
+namespace boros {
 
     /// Represents an entry in the completion queue.
     /// Encodes the result of a previously submitted operation.

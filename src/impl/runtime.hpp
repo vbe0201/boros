@@ -3,46 +3,58 @@
 
 #pragma once
 
-#include <Python.h>
+#include "python_utils.hpp"
 
 #include "ring.hpp"
 
-namespace boros::impl {
+namespace boros {
 
-    class Runtime {
-    private:
-        IoRing m_ring;
+    /// The runtime instance state. This is kept in thread-local storage
+    /// and is exclusively managed through the RuntimeContext from Python.
+    struct Runtime {
+        IoRing ring;
 
-    public:
-        Runtime() noexcept = default;
-        ~Runtime() noexcept = default;
+        /// Sets up this runtime instance by initializing all resources.
+        auto Create(unsigned sq_entries, io_uring_params &p) noexcept -> bool;
+
+        /// Tears down this runtime instance if it is active. It can be
+        /// reenabled by another call to Create.
+        auto Destroy() noexcept -> void;
+
+        /// Indicates if this runtime is currently ready for use.
+        auto IsCreated() const noexcept -> bool;
 
         /// Gets the runtime instance for the current thread.
         static auto Get() noexcept -> Runtime&;
-
-        /// Creates a new runtime instance by initializing all resources
-        /// and setting up an io_uring instance from the given parameters.
-        auto Create(unsigned sq_entries, io_uring_params &p) noexcept -> PyObject*;
-
-        /// Whether this runtime has already been created or not.
-        auto IsCreated() const noexcept -> bool;
-
-        /// Gets the file descriptor of the underlying io_uring instance.
-        auto GetRingFd() const noexcept -> PyObject*;
-
-        /// Enables the underlying io_uring instance.
-        auto EnableRing() const noexcept -> PyObject*;
     };
 
     /// A Python structure providing access to the current runtime state.
     /// This should be the preferred way of interacting with the runtime.
-    struct RuntimeContextObj {
+    struct RuntimeContext {
         PyObject_HEAD
         Runtime *rt;
 
-        /// Makes the RuntimeContext class accessible to Python code through
-        /// the given module object.
-        static auto Register(PyObject *module) noexcept -> PyObject*;
+        /// The implementation of the __new__ operator for this class.
+        static auto New(PyTypeObject *tp, PyObject *args, PyObject *kwds) noexcept -> PyObject*;
+
+        /// Enters the runtime context on the current thread.
+        static auto Enter(PyTypeObject *tp, unsigned long sqes, unsigned long cqes, long wq_fd) noexcept -> RuntimeContext*;
+
+        /// Gets the associated runtime instance for this thread.
+        static auto Get(PyTypeObject *tp) noexcept -> RuntimeContext*;
+
+        /// Gets the file descriptor of the associated io_uring instance,
+        /// or -1 if it is closed already.
+        auto GetRingFd() const noexcept -> long;
+
+        /// Enables the associated io_uring instance after it was created.
+        /// Only then it is possible to submit operations to the ring.
+        auto EnableRing() const noexcept -> void;
+
+        /// Exposes the RuntimeContext class to a given Python module.
+        static auto Register(python::Module mod) noexcept -> PyObject*;
     };
+
+    static_assert(python::PythonObject<RuntimeContext>);
 
 }

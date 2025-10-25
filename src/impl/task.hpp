@@ -5,7 +5,7 @@
 
 #include <Python.h>
 
-namespace boros::impl {
+namespace boros {
 
     /// Represents an asynchronous unit of work. This wraps a coroutine object
     /// and drives its execution. Note that Tasks in other async frameworks

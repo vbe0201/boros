@@ -4,7 +4,7 @@
 #include "squeue.hpp"
 #include "utils.hpp"
 
-namespace boros::impl {
+namespace boros {
 
     namespace {
 

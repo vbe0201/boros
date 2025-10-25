@@ -7,7 +7,7 @@
 #include "squeue.hpp"
 #include "utils.hpp"
 
-namespace boros::impl {
+namespace boros {
 
     /// An io_uring instance which can be used to perform I/O in the kernel.
     /// Objects should only ever be driven from a single thread.
@@ -35,6 +35,10 @@ namespace boros::impl {
         /// Creates a new io_uring instance from a already set up file descriptor
         /// and the configuration parameters.
         auto CreateWithFile(int fd, io_uring_params &p) noexcept -> int;
+
+        /// Tears down this io_uring instance. It can be recreated with another
+        /// call to Create.
+        auto Destroy() noexcept -> void;
 
         /// Indicates whether the io_uring instance has already been created.
         ALWAYS_INLINE auto IsCreated() const noexcept -> bool {

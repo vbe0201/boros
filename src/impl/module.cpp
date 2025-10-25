@@ -1,25 +1,23 @@
 // This source file is part of the boros project.
 // SPDX-License-Identifier: ISC
 
-#include <Python.h>
+#include "python_utils.hpp"
 
 #include "operation.hpp"
 #include "runtime.hpp"
 
-using namespace boros::impl;
+using namespace boros;
 
 namespace {
 
-    constinit PyMethodDef g_impl_methods[] = {
-        {nullptr, nullptr, 0, nullptr}
-    };
+    auto g_impl_methods = python::MethodTable();
 
     constinit PyModuleDef g_impl_module = {
         PyModuleDef_HEAD_INIT,
         "_impl",
         "Implementation details of boros._impl",
         -1,
-        g_impl_methods,
+        g_impl_methods.data(),
         nullptr,
         nullptr,
         nullptr,
@@ -29,17 +27,17 @@ namespace {
 }
 
 PyMODINIT_FUNC PyInit__impl() {
-    auto *module = PyModule_Create(&g_impl_module);
+    auto module = python::Module::Create(g_impl_module);
 
-    auto *operation = OperationObj::Register(module);
+    auto *operation = Operation::Register(module);
     if (operation == nullptr) [[unlikely]] {
         return nullptr;
     }
 
-    auto *runtime_context = RuntimeContextObj::Register(module);
+    auto *runtime_context = RuntimeContext::Register(module);
     if (runtime_context == nullptr) [[unlikely]] {
         return nullptr;
     }
 
-    return module;
+    return module.raw;
 }
