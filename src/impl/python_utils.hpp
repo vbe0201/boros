@@ -89,6 +89,12 @@ namespace boros::python {
 
     namespace impl {
 
+        template <typename T>
+        constexpr inline std::size_t SizeOf = sizeof(T);
+
+        template <>
+        constexpr inline std::size_t SizeOf<void> = 0;
+
         template <typename Cls, typename... Args>
         struct ArgParser {
             static constexpr bool ForInstanceMethod = !std::is_same_v<Cls, void>;
@@ -288,7 +294,7 @@ namespace boros::python {
 
     template <typename T, typename Extra = void> requires PythonObject<T>
     auto TypeSpec(const char *name, PyType_Slot *slots, unsigned int flags = Py_TPFLAGS_DEFAULT) -> PyType_Spec {
-        return {name, sizeof(T), std::is_same_v<Extra, void> ? 0 : sizeof(Extra), flags, slots};
+        return {name, sizeof(T), impl::SizeOf<Extra>, flags, slots};
     }
 
 }
