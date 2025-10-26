@@ -3,8 +3,8 @@
 
 #include "python_utils.hpp"
 
-#include "operation.hpp"
 #include "runtime.hpp"
+#include "task.hpp"
 
 using namespace boros;
 
@@ -29,13 +29,13 @@ namespace {
 PyMODINIT_FUNC PyInit__impl() {
     auto module = python::Module::Create(g_impl_module);
 
-    auto *operation = Operation::Register(module);
-    if (operation == nullptr) [[unlikely]] {
+    auto *runtime_context = RuntimeContext::Register(module);
+    if (runtime_context == nullptr) [[unlikely]] {
         return nullptr;
     }
 
-    auto *runtime_context = RuntimeContext::Register(module);
-    if (runtime_context == nullptr) [[unlikely]] {
+    auto *task = Task::Register(module);
+    if (task == nullptr) [[unlikely]] {
         return nullptr;
     }
 

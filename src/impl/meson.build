@@ -1,7 +1,6 @@
 boros_cpp_sources = [
     'cqueue.cpp',
     'module.cpp',
-    'operation.cpp',
     'python_utils.cpp',
     'ring.cpp',
     'runtime.cpp',
@@ -11,9 +10,6 @@ boros_cpp_sources = [
 ]
 
 boros_cpp_args = [
-    # This will no longer be required when we drop Python 3.12.
-    '-DPY_SSIZE_T_CLEAN',
-
     # Disable C++ exceptions and RTTI to reduce binary size.
     '-fno-exceptions',
     '-fno-rtti',

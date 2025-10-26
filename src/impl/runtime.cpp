@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: ISC
 
 #include "runtime.hpp"
-#include "ceval.h"
 #include "macros.hpp"
 
 namespace boros {
@@ -94,7 +93,7 @@ namespace boros {
             return nullptr;
         }
 
-        auto *self = python::New<RuntimeContext>(tp);
+        auto *self = python::Alloc<RuntimeContext>(tp);
         if (self != nullptr) [[likely]] {
             self->rt = &g_current_runtime;
         }
@@ -112,7 +111,7 @@ namespace boros {
             return nullptr;
         }
 
-        auto *self = python::New<RuntimeContext>(tp);
+        auto *self = python::Alloc<RuntimeContext>(tp);
         if (self != nullptr) [[likely]] {
             self->rt = &g_current_runtime;
         }

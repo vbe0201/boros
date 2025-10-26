@@ -58,6 +58,4 @@ namespace boros {
         static auto Register(python::Module mod) noexcept -> PyObject*;
     };
 
-    static_assert(python::PythonObject<RuntimeContext>);
-
 }

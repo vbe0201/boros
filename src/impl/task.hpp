@@ -3,7 +3,9 @@
 
 #pragma once
 
-#include <Python.h>
+#include "python_utils.hpp"
+
+#include <linux/io_uring.h>
 
 namespace boros {
 
@@ -14,8 +16,8 @@ namespace boros {
     struct Task {
     private:
         struct ListLink {
-            ListLink *Prev;
-            ListLink *Next;
+            ListLink *prev;
+            ListLink *next;
 
             ListLink() noexcept;
 
@@ -63,23 +65,41 @@ namespace boros {
             auto Clear() noexcept -> void;
         };
 
-    private:
-        PyObject *m_coro;
-        ListLink m_link;
+    public:
+        PyObject_HEAD
+
+        /// Intrusive link that connects this Task with other tasks
+        /// to form the runtime's run queue. This allows us to track
+        /// tasks that should be unblocked without allocation.
+        ListLink link;
+
+        /// A weak reference to the coroutine that awaits this task.
+        /// When the I/O is done, we will provide it with the result.
+        python::WeakRef awaiter;
+
+        /// The current state of the task. This is used to implement
+        /// the iterator state machine which allows awaiting Tasks
+        /// on the Python side.
+        enum {
+            State_Pending,
+            State_Finished,
+        } state = State_Pending;
+
+        /// The submission queue entry for io_uring. This encodes
+        /// the I/O operation that was requested by Python code.
+        io_uring_sqe sqe{};
 
     public:
-        explicit Task(PyObject *coro) noexcept;
+        /// Implements the __next__ iterator method for this type. This is
+        /// the underlying implementation of the awaitable functionality.
+        static auto IterNext(PyObject *self) noexcept -> PyObject*;
 
-        ~Task() noexcept;
+        /// Unblocks the waiting coroutine with the result of the I/O
+        /// operation given through the completion queue entry.
+        auto Unblock() noexcept -> PyObject*;
 
-        /// Resumes execution of a suspended coroutine by injecting a given
-        /// value as the result of a suspension point. ret will then point
-        /// to a value produced at the suspension point.
-        auto Send(PyObject *value, PyObject **ret) const noexcept -> PySendResult;
-
-        /// Injects an exception object into the coroutine at the current
-        /// suspension point. Used to report errors from the event loop.
-        auto Throw(PyObject *exc) const noexcept -> void;
+        /// Exposes the Task class to a given Python module.
+        static auto Register(python::Module mod) noexcept -> PyObject*;
     };
 
 }

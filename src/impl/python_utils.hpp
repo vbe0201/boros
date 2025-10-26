@@ -5,6 +5,7 @@
 
 // Must be the first included header since Python may override
 // functionality in some of the standard headers.
+#define PY_SSIZE_T_CLEAN
 #include <Python.h>
 
 #include <array>
@@ -39,12 +40,81 @@ namespace boros::python {
             }
         );
 
+    /// A RAII wrapper around a weak reference to a Python object. This
+    /// solves the lack of garbage collection APIs with the limited API.
+    struct WeakRef {
+    private:
+        PyObject *m_ref;
+
+    public:
+        ALWAYS_INLINE WeakRef() noexcept : m_ref(nullptr) {}
+
+        ALWAYS_INLINE ~WeakRef() noexcept {
+            this->Clear();
+        }
+
+        WeakRef(const WeakRef&) = delete;
+        auto operator=(const WeakRef&) -> WeakRef& = delete;
+
+        ALWAYS_INLINE WeakRef(WeakRef &&rhs) noexcept : m_ref(rhs.m_ref) {
+            rhs.m_ref = nullptr;
+        }
+
+        ALWAYS_INLINE auto operator=(WeakRef &&rhs) noexcept -> WeakRef& {
+            if (this != &rhs) {
+                Py_XDECREF(m_ref);
+                m_ref = rhs.m_ref;
+                rhs.m_ref = nullptr;
+            }
+            return *this;
+        }
+
+        /// Gets a reference to the object, or nullptr if it is dead.
+        auto Get() const noexcept -> PyObject*;
+
+        /// Resets the reference and set a new referenced object.
+        auto Reset(PyObject *obj) noexcept -> void;
+
+        /// Releases any held weak reference.
+        auto Clear() noexcept -> void;
+    };
+
     /// Allocates a new Python object instance from the given type object.
     /// This is suitable as the implementation of __new__ for a type T.
     template <typename T> requires PythonObject<T>
-    auto New(PyTypeObject *tp) noexcept -> T* {
+    auto Alloc(PyTypeObject *tp) noexcept -> T* {
         auto *tp_alloc = reinterpret_cast<allocfunc>(PyType_GetSlot(tp, Py_tp_alloc));
-        return reinterpret_cast<T*>(tp_alloc(tp, 0));
+
+        auto *self = reinterpret_cast<T*>(tp_alloc(tp, 0));
+        if (self != nullptr) [[likely]] {
+            // Make sure the constructor does not destroy the state of
+            // the Python object by backing it up and restoring it.
+            auto base = self->ob_base;
+            std::construct_at(self);
+            self->ob_base = base;
+        }
+
+        return self;
+    }
+
+    /// Implements the Python __new__ operator by allocating an instance
+    /// of T and default-constructing it with its C++ constructor.
+    template <typename T> requires PythonObject<T>
+    auto DefaultNew(PyTypeObject *tp, PyObject *args, PyObject *kwds) noexcept -> PyObject* {
+        BOROS_UNUSED(args, kwds);
+        return reinterpret_cast<PyObject*>(Alloc<T>(tp));
+    }
+
+    /// Deallocates a Python object instance.
+    template <typename T> requires PythonObject<T>
+    auto Dealloc(PyObject *self) noexcept -> void {
+        PyTypeObject *tp = Py_TYPE(self);
+
+        std::destroy_at(reinterpret_cast<T*>(self));
+
+        auto *tp_free = reinterpret_cast<freefunc>(PyType_GetSlot(tp, Py_tp_free));
+        tp_free(self);
+        Py_DECREF(tp);
     }
 
     template <typename T> requires PythonObject<T>
