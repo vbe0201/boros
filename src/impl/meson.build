@@ -1,20 +1,12 @@
 boros_cpp_sources = [
-    'cqueue.cpp',
-    'module.cpp',
-    'python_utils.cpp',
-    'ring.cpp',
-    'runtime.cpp',
-    'squeue.cpp',
-    'task.cpp',
-    'utils.cpp',
-]
+    'io_uring/cqueue.cpp',
+    'io_uring/mmap.cpp',
+    'io_uring/ring.cpp',
+    'io_uring/squeue.cpp',
 
-boros_cpp_args = [
-    # Disable C++ exceptions and RTTI to reduce binary size.
-    '-fno-exceptions',
-    '-fno-rtti',
-    '-fno-unwind-tables',
-    '-fno-asynchronous-unwind-tables',
+    'module.cpp',
+    'runtime.cpp',
+    'task.cpp',
 ]
 
 ext = py.extension_module(
@@ -24,5 +16,4 @@ ext = py.extension_module(
     install: true,
     subdir: 'boros',
     limited_api: '3.12',
-    cpp_args: boros_cpp_args,
 )

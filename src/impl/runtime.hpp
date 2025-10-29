@@ -5,7 +5,7 @@
 
 #include "python_utils.hpp"
 
-#include "ring.hpp"
+#include "io_uring/ring.hpp"
 
 namespace boros {
 

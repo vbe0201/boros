@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: ISC
 
 #include "runtime.hpp"
+
+#include <cerrno>
+
 #include "macros.hpp"
 
 namespace boros {
@@ -18,7 +21,7 @@ namespace boros {
     }
 
     auto Runtime::Create(unsigned sq_entries, io_uring_params &p) noexcept -> bool {
-        if (int res = ring.Create(sq_entries, p); res < 0) [[unlikely]] {
+        if (int res = ring.Initialize(sq_entries, p); res < 0) [[unlikely]] {
             RaiseIoError(res);
             return false;
         }
@@ -27,11 +30,11 @@ namespace boros {
     }
 
     auto Runtime::Destroy() noexcept -> void {
-        ring.Destroy();
+        ring.Finalize();
     }
 
     auto Runtime::IsCreated() const noexcept -> bool {
-        return ring.IsCreated();
+        return ring.IsInitialized();
     }
 
     auto Runtime::Get() noexcept -> Runtime& {
