@@ -3,8 +3,9 @@
 
 #pragma once
 
-#include "python_utils.hpp"
+#include "wrapper/python.hpp"
 
+#include "implmodule.hpp"
 #include "io_uring/ring.hpp"
 
 namespace boros {
@@ -46,6 +47,9 @@ namespace boros {
         /// Gets the associated runtime instance for this thread.
         static auto Get(PyTypeObject *tp) noexcept -> RuntimeContext*;
 
+        /// Drives a coroutine to completion and returns its result.
+        auto Run(PyObject *coro) noexcept -> PyObject*;
+
         /// Gets the file descriptor of the associated io_uring instance,
         /// or -1 if it is closed already.
         auto GetRingFd() const noexcept -> long;
@@ -55,7 +59,7 @@ namespace boros {
         auto EnableRing() const noexcept -> void;
 
         /// Exposes the RuntimeContext class to a given Python module.
-        static auto Register(python::Module mod) noexcept -> PyObject*;
+        static auto Register(ImplModule mod) noexcept -> PyObject*;
     };
 
 }

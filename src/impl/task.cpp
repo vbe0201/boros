@@ -151,13 +151,11 @@ namespace boros {
 
     namespace {
 
-        auto g_task_methods = python::MethodTable(
-            python::Method<&Task::Unblock>("unblock")
-        );
+        auto g_task_methods = python::MethodTable();
 
         auto g_task_slots = python::TypeSlotTable(
             python::TypeSlot(Py_tp_new, &python::DefaultNew<Task>),
-            python::TypeSlot(Py_tp_dealloc, &python::Dealloc<Task>),
+            python::TypeSlot(Py_tp_dealloc, &python::DefaultDealloc<Task>),
             python::TypeSlot(Py_tp_methods, g_task_methods.data()),
             python::TypeSlot(Py_tp_iter, &PyObject_SelfIter),
             python::TypeSlot(Py_tp_iternext, &Task::IterNext),
@@ -172,7 +170,7 @@ namespace boros {
 
     }
 
-    auto Task::Register(python::Module mod) noexcept -> PyObject* {
+    auto Task::Register(ImplModule mod) noexcept -> PyObject* {
         return mod.Add(g_task_spec);
     }
 

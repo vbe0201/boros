@@ -3,9 +3,11 @@
 
 #pragma once
 
-#include "python_utils.hpp"
+#include "wrapper/python.hpp"
 
 #include <linux/io_uring.h>
+
+#include "implmodule.hpp"
 
 namespace boros {
 
@@ -75,7 +77,7 @@ namespace boros {
 
         /// A weak reference to the coroutine that awaits this task.
         /// When the I/O is done, we will provide it with the result.
-        python::WeakRef awaiter;
+        python::WeakReference awaiter;
 
         /// The current state of the task. This is used to implement
         /// the iterator state machine which allows awaiting Tasks
@@ -85,11 +87,10 @@ namespace boros {
             State_Finished,
         } state = State_Pending;
 
-        /// The submission queue entry for io_uring. This encodes
-        /// the I/O operation that was requested by Python code.
-        io_uring_sqe sqe{};
-
     public:
+        /// Allocates a new Task object.
+        static auto New() noexcept -> Task*;
+
         /// Implements the __next__ iterator method for this type. This is
         /// the underlying implementation of the awaitable functionality.
         static auto IterNext(PyObject *self) noexcept -> PyObject*;
@@ -99,7 +100,7 @@ namespace boros {
         auto Unblock() noexcept -> PyObject*;
 
         /// Exposes the Task class to a given Python module.
-        static auto Register(python::Module mod) noexcept -> PyObject*;
+        static auto Register(ImplModule mod) noexcept -> PyObject*;
     };
 
 }

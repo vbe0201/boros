@@ -7,6 +7,7 @@ project(
         'buildtype=debugoptimized',
         'warning_level=3',
         'cpp_std=c++23',
+        'b_ndebug=if-release',
     ],
 )
 

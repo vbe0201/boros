@@ -51,14 +51,14 @@ namespace boros {
         // Create the io_uring instance in the kernel.
         // We try to configure it without SQARRAY first...
         p.flags |= IORING_SETUP_NO_SQARRAY;
-        int fd = SetupRing(entries, &p);
+        int fd = SetupRing(entries, std::addressof(p));
         if (fd < 0 && fd != -EINVAL) [[unlikely]] {
             return fd;
         }
 
         // ...and if that didn't work, try again with it.
         p.flags &= ~IORING_SETUP_NO_SQARRAY;
-        fd = SetupRing(entries, &p);
+        fd = SetupRing(entries, std::addressof(p));
         if (fd < 0) [[unlikely]] {
             return fd;
         }
@@ -158,7 +158,7 @@ namespace boros {
         reg.nr    = nfiles;
         reg.flags = IORING_RSRC_REGISTER_SPARSE;
 
-        return this->RegisterRaw(IORING_REGISTER_FILES2, &reg, sizeof(reg));
+        return this->RegisterRaw(IORING_REGISTER_FILES2, std::addressof(reg), sizeof(reg));
     }
 
     auto IoRing::UnregisterFiles() const noexcept -> int {
@@ -182,7 +182,7 @@ namespace boros {
     		return -EEXIST;
     	}
 
-    	int res = this->RegisterRaw(IORING_REGISTER_RING_FDS, &upd, 1);
+    	int res = this->RegisterRaw(IORING_REGISTER_RING_FDS, std::addressof(upd), 1);
     	if (res == 1) [[likely]] {
     		m_enter_fd   = static_cast<int>(upd.offset);
     		m_registered = true;
@@ -199,7 +199,7 @@ namespace boros {
     		return -EINVAL;
     	}
 
-    	int res = this->RegisterRaw(IORING_UNREGISTER_RING_FDS, &upd, 1);
+    	int res = this->RegisterRaw(IORING_UNREGISTER_RING_FDS, std::addressof(upd), 1);
     	if (res == 1) [[likely]] {
     		m_enter_fd   = m_ring_fd;
     		m_registered = false;
@@ -233,7 +233,7 @@ namespace boros {
 	    io_uring_buf_reg reg{};
     	reg.bgid = bgid;
 
-    	return this->RegisterRaw(IORING_UNREGISTER_PBUF_RING, &reg, 1);
+    	return this->RegisterRaw(IORING_UNREGISTER_PBUF_RING, std::addressof(reg), 1);
     }
 
     auto IoRing::SubmitAndWait(unsigned want) const noexcept -> int {

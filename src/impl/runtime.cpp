@@ -122,6 +122,11 @@ namespace boros {
         return self;
     }
 
+    auto RuntimeContext::Run(PyObject *coro) noexcept -> PyObject* {
+        BOROS_UNUSED(coro);
+        Py_RETURN_NONE;
+    }
+
     auto RuntimeContext::GetRingFd() const noexcept -> long {
         return rt->ring.GetRingFd();
     }
@@ -138,6 +143,7 @@ namespace boros {
             python::Method<&RuntimeContext::Enter>("enter"),
             python::Method<&RuntimeContext::Exit>("exit"),
             python::Method<&RuntimeContext::Get>("get"),
+            python::Method<&RuntimeContext::Run>("run"),
             python::Method<&RuntimeContext::GetRingFd>("get_ring_fd"),
             python::Method<&RuntimeContext::EnableRing>("enable_ring")
         );
@@ -154,7 +160,7 @@ namespace boros {
 
     }
 
-    auto RuntimeContext::Register(python::Module mod) noexcept -> PyObject* {
+    auto RuntimeContext::Register(ImplModule mod) noexcept -> PyObject* {
         return mod.Add(g_runtime_context_spec);
     }
 

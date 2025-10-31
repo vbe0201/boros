@@ -4,7 +4,9 @@ boros_cpp_sources = [
     'io_uring/ring.cpp',
     'io_uring/squeue.cpp',
 
-    'module.cpp',
+    'wrapper/weakref.cpp',
+
+    'implmodule.cpp',
     'runtime.cpp',
     'task.cpp',
 ]

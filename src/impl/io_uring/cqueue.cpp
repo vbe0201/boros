@@ -28,7 +28,7 @@ namespace boros {
     }
 
     auto CompletionQueue::Iterator::operator*() const noexcept -> CompletionEntry {
-        auto *cqe = &m_queue->m_entries[m_head & m_queue->m_ring_mask];
+        auto *cqe = std::addressof(m_queue->m_entries[m_head & m_queue->m_ring_mask]);
         return CompletionEntry(cqe);
     }
 
