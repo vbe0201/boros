@@ -21,14 +21,14 @@ namespace {
         return 0;
     }
 
-    auto g_low_level_methods = boros::python::MethodTable();
+    constinit auto g_low_level_methods = boros::python::MethodTable();
 
     auto g_low_level_module_slots = boros::python::ModuleSlotTable(
         boros::python::ModuleSlot(Py_mod_exec, &ModuleExec),
         boros::python::ModuleSlot(Py_mod_multiple_interpreters, Py_MOD_PER_INTERPRETER_GIL_SUPPORTED)
     );
 
-    auto g_low_level_module = boros::LowLevelModuleDef(
+    constinit auto g_low_level_module = boros::LowLevelModuleDef(
         "_low_level",
         "",
         g_low_level_methods.data(),

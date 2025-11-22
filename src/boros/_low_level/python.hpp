@@ -90,7 +90,7 @@ namespace boros::python {
         }
 
     public:
-        ModuleDefinition(const char *name, const char *doc, PyMethodDef *methods, PyModuleDef_Slot *slots)
+        constexpr ModuleDefinition(const char *name, const char *doc, PyMethodDef *methods, PyModuleDef_Slot *slots)
             : m_module{PyModuleDef_HEAD_INIT, name, doc, sizeof(State), methods, slots, &Traverse, &Clear, &Free} {}
 
         auto CreateModule() -> PyObject* {
@@ -121,7 +121,7 @@ namespace boros::python {
         return reinterpret_cast<PyObject*>(value);
     }
 
-    auto FromPython(bool &out, PyObject *obj) -> void {
+    ALWAYS_INLINE auto FromPython(bool &out, PyObject *obj) -> void {
         if (!PyBool_Check(obj)) [[unlikely]] {
             PyErr_SetString(PyExc_TypeError, "Expected a boolean value");
             return;
@@ -129,12 +129,12 @@ namespace boros::python {
         out = (obj == Py_True);
     }
 
-    auto ToPython(bool value) -> PyObject* {
+    ALWAYS_INLINE auto ToPython(bool value) -> PyObject* {
         return PyBool_FromLong(value);
     }
 
     template <std::signed_integral I>
-    auto FromPython(I &out, PyObject *obj) -> void {
+    ALWAYS_INLINE auto FromPython(I &out, PyObject *obj) -> void {
         constexpr long long MinValue = std::numeric_limits<I>::min();
         constexpr long long MaxValue = std::numeric_limits<I>::max();
 
@@ -149,12 +149,12 @@ namespace boros::python {
     }
 
     template <std::signed_integral I>
-    auto ToPython(I value) -> PyObject* {
+    ALWAYS_INLINE auto ToPython(I value) -> PyObject* {
         return PyLong_FromLongLong(value);
     }
 
     template <std::unsigned_integral I>
-    auto FromPython(I &out, PyObject *obj) -> void {
+    ALWAYS_INLINE auto FromPython(I &out, PyObject *obj) -> void {
         constexpr unsigned long long MaxValue = std::numeric_limits<I>::max();
 
         unsigned long long tmp = PyLong_AsUnsignedLongLong(obj);
@@ -167,33 +167,33 @@ namespace boros::python {
     }
 
     template <std::unsigned_integral I>
-    auto ToPython(I value) -> PyObject* {
+    ALWAYS_INLINE auto ToPython(I value) -> PyObject* {
         return PyLong_FromUnsignedLongLong(value);
     }
 
-    auto FromPython(Module &out, PyObject *obj) -> void {
+    ALWAYS_INLINE auto FromPython(Module &out, PyObject *obj) -> void {
         assert(PyModule_Check(obj));
         out.raw = obj;
     }
 
-    auto ToPython(Module mod) -> PyObject* {
+    ALWAYS_INLINE auto ToPython(Module mod) -> PyObject* {
         return mod.raw;
     }
 
-    auto FromPython(Class &out, PyObject *obj) -> void {
+    ALWAYS_INLINE auto FromPython(Class &out, PyObject *obj) -> void {
         assert(PyType_Check(obj));
         out.tp = reinterpret_cast<PyTypeObject*>(obj);
     }
 
-    auto ToPython(Class cls) -> PyObject* {
+    ALWAYS_INLINE auto ToPython(Class cls) -> PyObject* {
         return reinterpret_cast<PyObject*>(cls.tp);
     }
 
-    auto FromPython(Static&, PyObject *obj) -> void {
+    ALWAYS_INLINE auto FromPython(Static&, PyObject *obj) -> void {
         assert(obj == nullptr);
     }
 
-    auto ToPython(Static) -> PyObject* {
+    ALWAYS_INLINE auto ToPython(Static) -> PyObject* {
         return nullptr;
     }
 
@@ -441,7 +441,7 @@ namespace boros::python {
     /// Creates a table of module slots suitable for use with
     /// module object creation.
     template <typename... Ts> requires (std::is_same_v<Ts, PyModuleDef_Slot> && ...)
-    ALWAYS_INLINE auto ModuleSlotTable(Ts... slots) -> std::array<PyModuleDef_Slot, sizeof...(Ts) + 1> {
+    constexpr auto ModuleSlotTable(Ts... slots) -> std::array<PyModuleDef_Slot, sizeof...(Ts) + 1> {
         return {{slots..., {0, nullptr}}};
     }
 
@@ -460,7 +460,7 @@ namespace boros::python {
     /// Creates a table of methods suitable for use with module
     /// or type object creation.
     template <typename... Ms> requires (std::is_same_v<Ms, PyMethodDef> && ...)
-    ALWAYS_INLINE auto MethodTable(Ms... methods) -> std::array<PyMethodDef, sizeof...(Ms) + 1> {
+    constexpr auto MethodTable(Ms... methods) -> std::array<PyMethodDef, sizeof...(Ms) + 1> {
         return {{methods..., {nullptr, nullptr, 0, nullptr}}};
     }
 
