@@ -7,6 +7,7 @@
 #include <Python.h>
 
 #include <array>
+#include <cassert>
 #include <tuple>
 #include <type_traits>
 
@@ -120,18 +121,6 @@ namespace boros::python {
         return reinterpret_cast<PyObject*>(value);
     }
 
-    auto FromPython(std::nullptr_t &out, PyObject *obj) -> void {
-        if (obj != nullptr) [[unlikely]] {
-            PyErr_SetString(PyExc_ValueError, "Expected a null pointer");
-            return;
-        }
-        out = nullptr;
-    }
-
-    auto ToPython(std::nullptr_t value) -> PyObject* {
-        return value;
-    }
-
     auto FromPython(bool &out, PyObject *obj) -> void {
         if (!PyBool_Check(obj)) [[unlikely]] {
             PyErr_SetString(PyExc_TypeError, "Expected a boolean value");
@@ -183,10 +172,7 @@ namespace boros::python {
     }
 
     auto FromPython(Module &out, PyObject *obj) -> void {
-        if (!PyModule_Check(obj)) [[unlikely]] {
-            PyErr_SetString(PyExc_TypeError, "expected a Python module object");
-            return;
-        }
+        assert(PyModule_Check(obj));
         out.raw = obj;
     }
 
@@ -195,10 +181,7 @@ namespace boros::python {
     }
 
     auto FromPython(Class &out, PyObject *obj) -> void {
-        if (!PyType_Check(obj)) [[unlikely]] {
-            PyErr_SetString(PyExc_TypeError, "Expected a Python type object");
-            return;
-        }
+        assert(PyType_Check(obj));
         out.tp = reinterpret_cast<PyTypeObject*>(obj);
     }
 
@@ -206,14 +189,11 @@ namespace boros::python {
         return reinterpret_cast<PyObject*>(cls.tp);
     }
 
-    auto FromPython(Static &out, PyObject *obj) -> void {
-        if (obj != nullptr) [[unlikely]] {
-            PyErr_SetString(PyExc_ValueError, "Expected a null pointer");
-            return;
-        }
+    auto FromPython(Static&, PyObject *obj) -> void {
+        assert(obj == nullptr);
     }
 
-    auto ToPython(Static obj) -> PyObject* {
+    auto ToPython(Static) -> PyObject* {
         return nullptr;
     }
 
@@ -272,7 +252,8 @@ namespace boros::python {
 
     namespace impl {
 
-        template <typename Cls, typename Ret, typename... Args> requires (PythonConvertible<Ret> || std::is_void_v<Ret>) && (PythonConvertible<Args> && ...)
+        template <typename Cls, typename Ret, typename... Args>
+            requires (PythonConvertible<Ret> || std::is_void_v<Ret>) && (PythonConvertible<Args> && ...)
         struct FunctionTraitsBase {
             using ClassType = Cls;
             using RetType   = Ret;
@@ -298,6 +279,8 @@ namespace boros::python {
             static constexpr bool ModuleMethod   = false;
             static constexpr bool StaticMethod   = false;
 
+            static constexpr std::size_t Arity = 0;
+
             static auto Parse(PyObject *Py_UNUSED(self), PyObject *const *Py_UNUSED(args), Py_ssize_t Py_UNUSED(nargs)) -> Tuple {
                 static_assert(InstanceMethod, "Only instance methods can have no arguments");
                 return Tuple{};
@@ -311,33 +294,36 @@ namespace boros::python {
             static constexpr bool ModuleMethod   = !InstanceMethod && std::is_same_v<First, Module>;
             static constexpr bool StaticMethod   = !InstanceMethod && std::is_same_v<First, Static>;
 
-            static auto Parse(PyObject *self, PyObject *const *args, Py_ssize_t nargs) -> std::tuple<First, Rest...> {
-                // The amount of expected arguments differs based on whether we
-                // are wrapping an instance method since self is the implicit
-                // this instead of an actual function parameter.
-                constexpr auto ExpectedArgs = (1 + sizeof...(Rest)) - !InstanceMethod;
+            // The amount of expected arguments differs based on whether we
+            // are wrapping an instance method since self is the implicit
+            // this instead of an actual function parameter.
+            static constexpr std::size_t Arity = (1 + sizeof...(Rest)) - !InstanceMethod;
 
+            static auto Parse(PyObject *self, PyObject *const *args, Py_ssize_t nargs) -> std::tuple<First, Rest...> {
                 std::tuple<First, Rest...> res;
-                if (nargs != ExpectedArgs) [[unlikely]] {
+                if (nargs != Arity) [[unlikely]] {
                     PyErr_Format(PyExc_TypeError,
-                        "Expected %zu arguments, got %zu instead", ExpectedArgs, nargs);
+                        "Expected %zu arguments, got %zu instead", Arity, nargs);
                     return res;
                 }
 
-                [&]<std::size_t... Is>(std::index_sequence<Is...>) ALWAYS_INLINE_LAMBDA {
-                    if constexpr (InstanceMethod) {
-                        (FromPython(std::get<Is>(res), args[Is]), ...);
-                    } else {
-                        FromPython(std::get<0>(res), self);
-                        (FromPython(std::get<Is + 1>(res), args[Is]), ...);
-                    }
-                }(std::make_index_sequence<ExpectedArgs>{});
+                if constexpr(Arity > 0) {
+                    [&]<std::size_t... Is>(std::index_sequence<Is...>) ALWAYS_INLINE_LAMBDA {
+                        if constexpr (InstanceMethod) {
+                            (FromPython(std::get<Is>(res), args[Is]), ...);
+                        } else {
+                            FromPython(std::get<0>(res), self);
+                            (FromPython(std::get<Is + 1>(res), args[Is]), ...);
+                        }
+                    }(std::make_index_sequence<Arity>{});
+                }
+
                 return res;
             }
         };
 
         template <auto Fn>
-        struct CallHelper {
+        struct MethodHelper {
             using Traits = FunctionTraits<decltype(Fn)>;
             using Cls    = typename Traits::ClassType;
             using Args   = typename Traits::ArgsType;
@@ -345,7 +331,16 @@ namespace boros::python {
             using Parser = ArgParser<Cls, Args>;
 
             static constexpr int Flags = [] {
-                int flags = METH_FASTCALL;
+                int flags = 0;
+
+                if constexpr(Parser::Arity == 0) {
+                    flags |= METH_NOARGS;
+                } else if constexpr(Parser::Arity == 1) {
+                    flags |= METH_O;
+                } else {
+                    flags |= METH_FASTCALL;
+                }
+
                 if constexpr(Parser::ClassMethod) {
                     flags |= METH_CLASS;
                 } else if constexpr(Parser::StaticMethod) {
@@ -372,18 +367,12 @@ namespace boros::python {
                 return std::apply(Wrapper, std::forward<decltype(args)>(args));
             }
 
-        public:
-            static auto Fastcall(PyObject *self, PyObject *const *args, Py_ssize_t nargs) -> PyObject* {
-                auto cpp_args = Parser::Parse(self, args, PyVectorcall_NARGS(nargs));
-                if (PyErr_Occurred() != nullptr) [[unlikely]] {
-                    return nullptr;
-                }
-
+            static auto CallImpl(PyObject *self, auto &&args) -> PyObject* {
                 if constexpr(std::is_void_v<Ret>) {
                     if constexpr(Parser::InstanceMethod) {
-                        CallMemberFunctionImpl(self, std::move(cpp_args));
+                        CallMemberFunctionImpl(self, std::move(args));
                     } else {
-                        CallFreeFunctionImpl(std::move(cpp_args));
+                        CallFreeFunctionImpl(std::move(args));
                     }
 
                     if (PyErr_Occurred() != nullptr) [[unlikely]] {
@@ -394,16 +383,48 @@ namespace boros::python {
                 } else {
                     Ret ret;
                     if constexpr (Parser::InstanceMethod) {
-                        ret = CallMemberFunctionImpl(self, std::move(cpp_args));
+                        ret = CallMemberFunctionImpl(self, std::move(args));
                     } else {
-                        ret = CallFreeFunctionImpl(std::move(cpp_args));
+                        ret = CallFreeFunctionImpl(std::move(args));
                     }
 
                     if (PyErr_Occurred() != nullptr) [[unlikely]] {
                         return nullptr;
                     }
 
-                    return ToPython(ret);
+                    return ToPython<Ret>(ret);
+                }
+            }
+
+            static auto Fastcall(PyObject *self, PyObject *const *args, Py_ssize_t nargs) -> PyObject* {
+                auto cpp_args = Parser::Parse(self, args, PyVectorcall_NARGS(nargs));
+                if (PyErr_Occurred() != nullptr) [[unlikely]] {
+                    return nullptr;
+                }
+
+                return CallImpl(self, std::move(cpp_args));
+            }
+
+            static auto Fastcall1(PyObject *self, PyObject *arg) -> PyObject* {
+                PyObject *args[1] = {arg};
+                return Fastcall(self, args, 1);
+            }
+
+            static auto Fastcall0(PyObject *self, PyObject *Py_UNUSED(arg)) -> PyObject* {
+                return Fastcall(self, nullptr, 0);
+            }
+
+        public:
+            ALWAYS_INLINE static auto GetCallback() -> PyCFunction {
+                if constexpr(Parser::Arity == 0) {
+                    return reinterpret_cast<PyCFunction>(&Fastcall0);
+                } else if constexpr(Parser::Arity == 1) {
+                    return reinterpret_cast<PyCFunction>(&Fastcall1);
+                } else {
+                    #pragma GCC diagnostic push
+                    #pragma GCC diagnostic ignored "-Wcast-function-type"
+                    return reinterpret_cast<PyCFunction>(&Fastcall);
+                    #pragma GCC diagnostic pop
                 }
             }
         };
@@ -448,12 +469,8 @@ namespace boros::python {
     /// between Python objects internally.
     template <auto Fn>
     ALWAYS_INLINE auto Method(const char *name, const char *doc = nullptr) -> PyMethodDef {
-        using Helper = impl::CallHelper<Fn>;
-
-        #pragma GCC diagnostic push
-        #pragma GCC diagnostic ignored "-Wcast-function-type"
-        return {name, reinterpret_cast<PyCFunction>(&Helper::Fastcall), Helper::Flags, doc};
-        #pragma GCC diagnostic pop
+        using Helper = impl::MethodHelper<Fn>;
+        return {name, Helper::GetCallback(), Helper::Flags, doc};
     }
 
     /// Creates a new Python type specification from the given

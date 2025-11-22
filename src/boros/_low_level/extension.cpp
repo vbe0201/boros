@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: ISC
 
 #include "extension.hpp"
-#include "moduleobject.h"
 
 namespace boros {
 
