@@ -1,6 +1,6 @@
 # Disable exceptions and RTTI for all project targets.
-# This reduces binary size and we don't want to raise
-# exceptions on the C++ side anyway.
+# This reduces binary size and we want to report errors
+# only to the Python side anyway.
 add_project_arguments(
     '-fno-exceptions',
     '-fno-rtti',
@@ -10,4 +10,3 @@ add_project_arguments(
 )
 
 subdir('boros')
-subdir('impl')
