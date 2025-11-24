@@ -217,6 +217,10 @@ namespace boros::python {
         union {
             T inner;
         };
+
+        ALWAYS_INLINE auto operator->() -> T* {
+            return &inner;
+        }
     };
 
     /// Allocates a new Python object from the corresponding type.
