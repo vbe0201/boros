@@ -468,6 +468,75 @@ namespace boros::python {
         return {{methods..., {nullptr, nullptr, 0, nullptr}}};
     }
 
+    template <typename... Ms> requires (std::is_same_v<Ms, PyMemberDef> && ...)
+    constexpr auto MemberTable(Ms... members) -> std::array<PyMemberDef, sizeof...(Ms) + 1> {
+        return {{members..., {nullptr, 0, 0, 0, nullptr}}};
+    }
+
+    namespace {
+
+        template <typename>
+        constexpr inline int MemberTypeTag = 0;
+
+        template <>
+        constexpr inline int MemberTypeTag<char> = Py_T_BYTE;
+
+        template <>
+        constexpr inline int MemberTypeTag<short> = Py_T_SHORT;
+
+        template <>
+        constexpr inline int MemberTypeTag<int> = Py_T_INT;
+
+        template <>
+        constexpr inline int MemberTypeTag<long> = Py_T_LONG;
+
+        template <>
+        constexpr inline int MemberTypeTag<long long> = Py_T_LONGLONG;
+
+        template <>
+        constexpr inline int MemberTypeTag<unsigned char> = Py_T_UBYTE;
+
+        template <>
+        constexpr inline int MemberTypeTag<unsigned int> = Py_T_UINT;
+
+        template <>
+        constexpr inline int MemberTypeTag<unsigned short> = Py_T_USHORT;
+
+        template <>
+        constexpr inline int MemberTypeTag<unsigned long> = Py_T_ULONG;
+
+        template <>
+        constexpr inline int MemberTypeTag<unsigned long long> = Py_T_ULONGLONG;
+
+        template <>
+        constexpr inline int MemberTypeTag<float> = Py_T_FLOAT;
+
+        template <>
+        constexpr inline int MemberTypeTag<double> = Py_T_DOUBLE;
+
+        template <>
+        constexpr inline int MemberTypeTag<bool> = Py_T_BOOL;
+
+        template <>
+        constexpr inline int MemberTypeTag<const char*> = Py_T_STRING;
+
+        template <std::size_t N>
+        constexpr inline int MemberTypeTag<const char[N]> = Py_T_STRING_INPLACE;
+
+        template <>
+        constexpr inline int MemberTypeTag<PyObject*> = Py_T_OBJECT_EX;
+
+        template <typename T, std::size_t Offset>
+        constexpr auto PythonMember(const char *name, int flags = 0, const char *doc = nullptr) -> PyMemberDef {
+            return {name, MemberTypeTag<T>, Offset, flags, doc};
+        }
+
+    }
+
+    /// Maps a C++ struct member to a Python class member.
+    #define PythonMember(type, name, ...) \
+        ::boros::python::impl::PythonMember<decltype(type::name), offsetof(type, name)>(#name __VA_OPT__(,) __VA_ARGS__)
+
     /// Creates a Python method by wrapping a given C++ function.
     /// Arguments and return types will be detected and converted
     /// between Python objects internally.
