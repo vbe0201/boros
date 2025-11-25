@@ -80,7 +80,7 @@ namespace boros {
 
         // If the kernel does not support a single mmap for both queues,
         // the user is running on an unsupported kernel.
-        if ((p.features & IORING_FEAT_SINGLE_MMAP) != 0) [[unlikely]] {
+        if ((p.features & IORING_FEAT_SINGLE_MMAP) == 0) [[unlikely]] {
             return -EOPNOTSUPP;
         }
 

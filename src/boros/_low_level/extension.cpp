@@ -13,30 +13,30 @@ namespace boros {
         return 0;
     }
 
-}
+    namespace {
 
-namespace {
+        auto ModuleExec(PyObject *mod) -> int {
+            return 0;
+        }
 
-    auto ModuleExec(PyObject *mod) -> int {
-        return 0;
+        constinit auto g_low_level_methods = python::MethodTable();
+
+        auto g_low_level_module_slots = python::ModuleSlotTable(
+            python::ModuleSlot(Py_mod_exec, &ModuleExec),
+            python::ModuleSlot(Py_mod_multiple_interpreters, Py_MOD_PER_INTERPRETER_GIL_SUPPORTED)
+        );
+
+        constinit auto g_low_level_module = LowLevelModuleDef(
+            "_low_level",
+            "",
+            g_low_level_methods.data(),
+            g_low_level_module_slots.data()
+        );
+
+        PyMODINIT_FUNC PyInit__low_level() {
+            return g_low_level_module.CreateModule();
+        }
+
     }
 
-    constinit auto g_low_level_methods = boros::python::MethodTable();
-
-    auto g_low_level_module_slots = boros::python::ModuleSlotTable(
-        boros::python::ModuleSlot(Py_mod_exec, &ModuleExec),
-        boros::python::ModuleSlot(Py_mod_multiple_interpreters, Py_MOD_PER_INTERPRETER_GIL_SUPPORTED)
-    );
-
-    constinit auto g_low_level_module = boros::LowLevelModuleDef(
-        "_low_level",
-        "",
-        g_low_level_methods.data(),
-        g_low_level_module_slots.data()
-    );
-
-}
-
-PyMODINIT_FUNC PyInit__low_level() {
-    return g_low_level_module.CreateModule();
 }

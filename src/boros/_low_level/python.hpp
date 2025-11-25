@@ -55,7 +55,7 @@ namespace boros::python {
     }
 
     /// Instantiates a new type from a spec and binds it to a module.
-    ALWAYS_INLINE auto AddTypeToModule(PyObject *module, PyType_Spec &spec) -> PyObject* {
+    ALWAYS_INLINE auto AddTypeToModule(PyObject *module, PyType_Spec &spec) -> PyTypeObject* {
         auto *tp = PyType_FromModuleAndSpec(module, &spec, nullptr);
         if (tp == nullptr) [[unlikely]] {
             return nullptr;
@@ -65,7 +65,7 @@ namespace boros::python {
             return nullptr;
         }
 
-        return tp;
+        return reinterpret_cast<PyTypeObject*>(tp);
     }
 
     /// Represents a Python extension module.
