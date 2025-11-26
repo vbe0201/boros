@@ -19,6 +19,10 @@ namespace boros {
 
         ALWAYS_INLINE explicit Completion(io_uring_cqe *c) : cqe(c) {}
 
+        ALWAYS_INLINE auto GetResult() const -> int {
+            return cqe->res;
+        }
+
         ALWAYS_INLINE auto IsFinished() const -> bool {
             return (cqe->flags & IORING_CQE_F_MORE) == 0;
         }

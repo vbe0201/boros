@@ -8,6 +8,7 @@
 
 #include <array>
 #include <cassert>
+#include <cstddef>
 #include <tuple>
 #include <type_traits>
 
@@ -34,6 +35,7 @@ namespace boros::python {
     concept ModuleState = requires (T &state, visitproc visit, void *arg) {
         { state.Traverse(visit, arg) } -> std::same_as<int>;
         { state.Clear()              } -> std::same_as<int>;
+        { state.Free()               } -> std::same_as<void>;
     };
 
     /// Gets the per-module state through a module object.
@@ -86,7 +88,10 @@ namespace boros::python {
         }
 
         static auto Free(void *module) -> void {
-            Clear(static_cast<PyObject*>(module));
+            auto *mod = static_cast<PyObject*>(module);
+            auto &state = GetModuleState<State>(mod);
+            state.Free();
+            Clear(mod);
         }
 
     public:
@@ -111,13 +116,13 @@ namespace boros::python {
     /// A marker for Python staticmethods.
     struct Static {};
 
-    template <PythonObject T>
-    auto FromPython(T *&out, PyObject *obj) -> void {
-        out = reinterpret_cast<T*>(obj);
+    template <typename Ptr> requires PythonObject<std::remove_pointer_t<Ptr>>
+    auto FromPython(Ptr &out, PyObject *obj) -> void {
+        out = reinterpret_cast<Ptr>(obj);
     }
 
-    template <PythonObject T>
-    auto ToPython(T *value) -> PyObject* {
+    template <typename Ptr> requires PythonObject<std::remove_pointer_t<Ptr>>
+    auto ToPython(Ptr value) -> PyObject* {
         return reinterpret_cast<PyObject*>(value);
     }
 
@@ -190,6 +195,7 @@ namespace boros::python {
     }
 
     ALWAYS_INLINE auto FromPython(Static&, PyObject *obj) -> void {
+        BOROS_UNUSED(obj);
         assert(obj == nullptr);
     }
 
@@ -218,8 +224,9 @@ namespace boros::python {
             T inner;
         };
 
-        ALWAYS_INLINE auto operator->() -> T* {
-            return &inner;
+        /// Gets the inner payload of the object.
+        ALWAYS_INLINE auto Get() -> T& {
+            return inner;
         }
     };
 
@@ -473,7 +480,7 @@ namespace boros::python {
         return {{members..., {nullptr, 0, 0, 0, nullptr}}};
     }
 
-    namespace {
+    namespace impl {
 
         template <typename>
         constexpr inline int MemberTypeTag = 0;
@@ -527,15 +534,18 @@ namespace boros::python {
         constexpr inline int MemberTypeTag<PyObject*> = Py_T_OBJECT_EX;
 
         template <typename T, std::size_t Offset>
-        constexpr auto PythonMember(const char *name, int flags = 0, const char *doc = nullptr) -> PyMemberDef {
+        constexpr auto MemberImpl(const char *name, int flags = 0, const char *doc = nullptr) -> PyMemberDef {
             return {name, MemberTypeTag<T>, Offset, flags, doc};
         }
 
     }
 
     /// Maps a C++ struct member to a Python class member.
-    #define PythonMember(type, name, ...) \
-        ::boros::python::impl::PythonMember<decltype(type::name), offsetof(type, name)>(#name __VA_OPT__(,) __VA_ARGS__)
+    #define PythonMember(type, name, ...)                                         \
+        ::boros::python::impl::MemberImpl<                                        \
+            decltype(type::name),                                                 \
+            offsetof(::boros::python::Object<type>, inner) + offsetof(type, name) \
+        >(BOROS_STR(name) __VA_OPT__(,) __VA_ARGS__)
 
     /// Creates a Python method by wrapping a given C++ function.
     /// Arguments and return types will be detected and converted
@@ -548,9 +558,9 @@ namespace boros::python {
 
     /// Creates a new Python type specification from the given
     /// metadata.
-    template <typename T> requires PythonObject<T>
-    ALWAYS_INLINE auto TypeSpec(const char *name, PyType_Slot *slots, unsigned int flags = Py_TPFLAGS_DEFAULT) -> PyType_Spec {
-        return {name, sizeof(T), 0, flags, slots};
+    template <typename T>
+    constexpr auto TypeSpec(const char *name, PyType_Slot *slots, unsigned int flags = Py_TPFLAGS_DEFAULT) -> PyType_Spec {
+        return {name, sizeof(Object<T>), 0, flags, slots};
     }
 
 }

@@ -6,6 +6,7 @@ boros_sources = [
 
 boros_low_level_sources = [
     '_low_level/cqueue.cpp',
+    '_low_level/event_loop.cpp',
     '_low_level/extension.cpp',
     '_low_level/mmap.cpp',
     '_low_level/ring.cpp',
