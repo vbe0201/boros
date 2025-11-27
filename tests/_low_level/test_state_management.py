@@ -4,6 +4,13 @@ import pytest
 from boros._low_level import *
 
 
+def test_cannot_instantiate_event_loop():
+    # This isn't possible because users must go through the global
+    # state management functions to obtain event loop instances.
+    with pytest.raises(TypeError):
+        EventLoop()
+
+
 def test_basic_state_management():
     policy = EventLoopPolicy()
     policy.sq_entries = 2
