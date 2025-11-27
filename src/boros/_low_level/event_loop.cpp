@@ -9,6 +9,9 @@
 
 namespace boros {
 
+    // TODO: Disable EventLoop.__new__
+    // TODO: Redesign submissions into the queue
+
     namespace {
 
         auto RaiseOsErrorFromRing(int res) -> void {
@@ -18,24 +21,32 @@ namespace boros {
 
     }
 
-    auto EventLoop::Create(python::Module mod, python::Object<EventLoopPolicy> *policy_) -> python::Object<EventLoop>* {
+    auto EventLoop::Create(python::Module mod, PyObject *policy_) -> PyObject* {
         auto &state    = python::GetModuleState<ModuleState>(mod.raw);
-        auto &policy   = policy_->Get();
         auto *loop_key = state.local_event_loop;
+
+        auto *policy = python::Cast<EventLoopPolicy>(policy_, state.EventLoopPolicyType);
+        if (policy == nullptr) [[unlikely]] {
+            return nullptr;
+        }
 
         assert(PyThread_tss_is_created(loop_key));
 
         auto *loop = reinterpret_cast<python::Object<EventLoop>*>(PyThread_tss_get(loop_key));
         if (loop == nullptr) [[likely]] {
             loop = python::Alloc<EventLoop>(state.EventLoopType);
+            if (loop == nullptr) [[unlikely]] {}
             auto &ring = loop->Get().m_ring;
+            auto &conf = policy->Get();
 
-            if (int res = ring.Initialize(policy.sq_entries, policy.cq_entries); res < 0) [[unlikely]] {
+            if (int res = ring.Initialize(conf.sq_entries, conf.cq_entries); res < 0) [[unlikely]] {
+                Py_DECREF(loop);
                 RaiseOsErrorFromRing(res);
                 return nullptr;
             }
 
             if (int res = ring.Enable(); res < 0) [[unlikely]] {
+                Py_DECREF(loop);
                 RaiseOsErrorFromRing(res);
                 return nullptr;
             }
@@ -43,8 +54,8 @@ namespace boros {
             PyThread_tss_set(state.local_event_loop, loop);
         }
 
-        Py_INCREF(reinterpret_cast<PyObject*>(loop));
-        return loop;
+        Py_INCREF(*loop);
+        return *loop;
     }
 
     auto EventLoop::Destroy(python::Module mod) -> void {
@@ -55,26 +66,26 @@ namespace boros {
 
         auto *loop = reinterpret_cast<PyObject*>(PyThread_tss_get(loop_key));
         if (loop != nullptr) {
-            python::DefaultDealloc<EventLoop>(loop);
+            Py_DECREF(loop);
             PyThread_tss_set(state.local_event_loop, nullptr);
         }
     }
 
-    auto EventLoop::Get(python::Module mod) -> python::Object<EventLoop>* {
+    auto EventLoop::Get(python::Module mod) -> PyObject* {
         auto &state    = python::GetModuleState<ModuleState>(mod.raw);
         auto *loop_key = state.local_event_loop;
 
         assert(PyThread_tss_is_created(loop_key));
 
-        auto *loop = PyThread_tss_get(loop_key);
+        auto *loop = reinterpret_cast<PyObject*>(PyThread_tss_get(loop_key));
         if (loop == nullptr) [[unlikely]] {
             PyErr_SetString(PyExc_RuntimeError,
                 "no running event loop on the current thread");
             return nullptr;
         }
 
-        Py_INCREF(reinterpret_cast<PyObject*>(loop));
-        return reinterpret_cast<python::Object<EventLoop>*>(loop);
+        Py_INCREF(loop);
+        return loop;
     }
 
     auto EventLoop::Tick() -> void {
@@ -90,13 +101,18 @@ namespace boros {
     }
 
     auto EventLoop::Nop(python::Module mod, int res) -> void {
-        auto &state = python::GetModuleState<ModuleState>(mod.raw);
-        auto *loop = reinterpret_cast<python::Object<EventLoop>*>(PyThread_tss_get(state.local_event_loop));
-        if (loop != nullptr) {
-            auto &queue = loop->Get().m_ring.GetSubmissionQueue();
-            auto entry = queue.PushUnchecked();
+        auto *loop = reinterpret_cast<python::Object<EventLoop>*>(EventLoop::Get(mod));
+        if (loop == nullptr) [[unlikely]] {
+            return;
+        }
+        
+        auto &sq = loop->Get().m_ring.GetSubmissionQueue();
+        if (sq.HasCapacityFor(1)) {
+            auto entry = sq.PushUnchecked();
             entry.Prepare(IORING_OP_NOP, -1, nullptr, res, 0);
             entry.sqe->nop_flags |= IORING_NOP_INJECT_RESULT;
+        } else {
+            PyErr_SetString(PyExc_OverflowError, "SQ is full");
         }
     }
 

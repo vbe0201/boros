@@ -28,8 +28,7 @@ namespace boros {
     public:
         /// Creates a new event loop for the current thread given a
         /// creation policy and returns its instance.
-        static auto Create(python::Module mod, python::Object<EventLoopPolicy> *policy)
-            -> python::Object<EventLoop>*;
+        static auto Create(python::Module mod, PyObject *policy) -> PyObject*;
 
         /// Destroys the active event loop on the current thread.
         /// No-op if  the event loop is not running.
@@ -37,7 +36,7 @@ namespace boros {
 
         /// Gets the active event loop on the current thread, or
         /// raises an exception if not set.
-        static auto Get(python::Module mod) -> python::Object<EventLoop>*;
+        static auto Get(python::Module mod) -> PyObject*;
 
         /// Registers the EventLoop as a Python class onto the module.
         static auto Register(PyObject *mod) -> PyTypeObject*;

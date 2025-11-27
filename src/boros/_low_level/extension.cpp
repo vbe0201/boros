@@ -3,6 +3,7 @@
 
 #include "extension.hpp"
 #include "event_loop.hpp"
+#include "python.hpp"
 
 namespace boros {
 

@@ -116,22 +116,20 @@ namespace boros::python {
     /// A marker for Python staticmethods.
     struct Static {};
 
-    template <typename Ptr> requires PythonObject<std::remove_pointer_t<Ptr>>
-    auto FromPython(Ptr &out, PyObject *obj) -> void {
-        out = reinterpret_cast<Ptr>(obj);
+    ALWAYS_INLINE auto FromPython(PyObject **out, PyObject *obj) -> void {
+        *out = obj;
     }
 
-    template <typename Ptr> requires PythonObject<std::remove_pointer_t<Ptr>>
-    auto ToPython(Ptr value) -> PyObject* {
-        return reinterpret_cast<PyObject*>(value);
+    ALWAYS_INLINE auto ToPython(PyObject *value) -> PyObject* {
+        return value;
     }
 
-    ALWAYS_INLINE auto FromPython(bool &out, PyObject *obj) -> void {
+    ALWAYS_INLINE auto FromPython(bool *out, PyObject *obj) -> void {
         if (!PyBool_Check(obj)) [[unlikely]] {
             PyErr_SetString(PyExc_TypeError, "Expected a boolean value");
             return;
         }
-        out = (obj == Py_True);
+        *out = (obj == Py_True);
     }
 
     ALWAYS_INLINE auto ToPython(bool value) -> PyObject* {
@@ -139,7 +137,7 @@ namespace boros::python {
     }
 
     template <std::signed_integral I>
-    ALWAYS_INLINE auto FromPython(I &out, PyObject *obj) -> void {
+    ALWAYS_INLINE auto FromPython(I *out, PyObject *obj) -> void {
         constexpr long long MinValue = std::numeric_limits<I>::min();
         constexpr long long MaxValue = std::numeric_limits<I>::max();
 
@@ -150,7 +148,7 @@ namespace boros::python {
             return;
         }
 
-        out = static_cast<I>(tmp);
+        *out = static_cast<I>(tmp);
     }
 
     template <std::signed_integral I>
@@ -159,7 +157,7 @@ namespace boros::python {
     }
 
     template <std::unsigned_integral I>
-    ALWAYS_INLINE auto FromPython(I &out, PyObject *obj) -> void {
+    ALWAYS_INLINE auto FromPython(I *out, PyObject *obj) -> void {
         constexpr unsigned long long MaxValue = std::numeric_limits<I>::max();
 
         unsigned long long tmp = PyLong_AsUnsignedLongLong(obj);
@@ -168,7 +166,7 @@ namespace boros::python {
             return;
         }
 
-        out = static_cast<I>(tmp);
+        *out = static_cast<I>(tmp);
     }
 
     template <std::unsigned_integral I>
@@ -176,25 +174,25 @@ namespace boros::python {
         return PyLong_FromUnsignedLongLong(value);
     }
 
-    ALWAYS_INLINE auto FromPython(Module &out, PyObject *obj) -> void {
+    ALWAYS_INLINE auto FromPython(Module *out, PyObject *obj) -> void {
         assert(PyModule_Check(obj));
-        out.raw = obj;
+        out->raw = obj;
     }
 
     ALWAYS_INLINE auto ToPython(Module mod) -> PyObject* {
         return mod.raw;
     }
 
-    ALWAYS_INLINE auto FromPython(Class &out, PyObject *obj) -> void {
+    ALWAYS_INLINE auto FromPython(Class *out, PyObject *obj) -> void {
         assert(PyType_Check(obj));
-        out.tp = reinterpret_cast<PyTypeObject*>(obj);
+        out->tp = reinterpret_cast<PyTypeObject*>(obj);
     }
 
     ALWAYS_INLINE auto ToPython(Class cls) -> PyObject* {
         return reinterpret_cast<PyObject*>(cls.tp);
     }
 
-    ALWAYS_INLINE auto FromPython(Static&, PyObject *obj) -> void {
+    ALWAYS_INLINE auto FromPython(Static*, PyObject *obj) -> void {
         BOROS_UNUSED(obj);
         assert(obj == nullptr);
     }
@@ -205,7 +203,7 @@ namespace boros::python {
 
     /// A C++ type that can be converted to and from a Python object.
     template <typename T>
-    concept PythonConvertible = requires (PyObject *obj, T &out, T value) {
+    concept PythonConvertible = requires (PyObject *obj, T *out, T value) {
         { FromPython(out, obj) } -> std::same_as<void>;
         { ToPython(value)      } -> std::same_as<PyObject*>;
     };
@@ -228,7 +226,28 @@ namespace boros::python {
         ALWAYS_INLINE auto Get() -> T& {
             return inner;
         }
+
+        /// Implements conversion from a typed object pointer to a
+        /// generic PyObject pointer.
+        ALWAYS_INLINE operator PyObject*() {
+            return reinterpret_cast<PyObject*>(this);
+        }
     };
+
+    /// Casts a Python object to a given type with an isinstance check.
+    template <typename T>
+    ALWAYS_INLINE auto Cast(PyObject *obj, PyTypeObject *tp_) -> Object<T>* {
+        auto *tp = reinterpret_cast<PyObject*>(tp_);
+        if (int res = PyObject_IsInstance(obj, tp); res != 1) [[unlikely]] {
+            if (res == 0) {
+                PyErr_SetString(PyExc_TypeError, "received invalid object type");
+            }
+
+            return nullptr;
+        }
+
+        return reinterpret_cast<Object<T>*>(obj);
+    }
 
     /// Allocates a new Python object from the corresponding type.
     template <typename T>
@@ -318,16 +337,14 @@ namespace boros::python {
                     return res;
                 }
 
-                if constexpr(Arity > 0) {
-                    [&]<std::size_t... Is>(std::index_sequence<Is...>) ALWAYS_INLINE_LAMBDA {
-                        if constexpr (InstanceMethod) {
-                            (FromPython(std::get<Is>(res), args[Is]), ...);
-                        } else {
-                            FromPython(std::get<0>(res), self);
-                            (FromPython(std::get<Is + 1>(res), args[Is]), ...);
-                        }
-                    }(std::make_index_sequence<Arity>{});
-                }
+                [&]<std::size_t... Is>(std::index_sequence<Is...>) ALWAYS_INLINE_LAMBDA {
+                    if constexpr (InstanceMethod) {
+                        (FromPython(std::get<Is>(res), args[Is]), ...);
+                    } else {
+                        FromPython(&std::get<0>(res), self);
+                        (FromPython(&std::get<Is + 1>(res), args[Is]), ...);
+                    }
+                }(std::make_index_sequence<Arity>{});
 
                 return res;
             }
@@ -403,7 +420,7 @@ namespace boros::python {
                         return nullptr;
                     }
 
-                    return ToPython<Ret>(ret);
+                    return ToPython(ret);
                 }
             }
 
