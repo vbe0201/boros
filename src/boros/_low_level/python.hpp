@@ -9,6 +9,7 @@
 #include <array>
 #include <cassert>
 #include <cstddef>
+#include <string_view>
 #include <tuple>
 #include <type_traits>
 
@@ -56,6 +57,21 @@ namespace boros::python {
         return GetStateFromType<State>(Py_TYPE(obj));
     }
 
+    namespace impl {
+
+        constexpr auto TrimSpecName(const char *name) -> const char* {
+            std::string_view sv{name};
+
+            auto pos = sv.rfind('.');
+            if (pos != std::string_view::npos) {
+                return sv.substr(pos + 1).data();
+            } else {
+                return sv.data();
+            }
+        }
+
+    }
+
     /// Instantiates a new type from a spec and binds it to a module.
     ALWAYS_INLINE auto AddTypeToModule(PyObject *module, PyType_Spec &spec) -> PyTypeObject* {
         auto *tp = PyType_FromModuleAndSpec(module, &spec, nullptr);
@@ -63,7 +79,7 @@ namespace boros::python {
             return nullptr;
         }
 
-        if (PyModule_AddObjectRef(module, spec.name, tp) < 0) [[unlikely]] {
+        if (PyModule_AddObjectRef(module, impl::TrimSpecName(spec.name), tp) < 0) [[unlikely]] {
             return nullptr;
         }
 

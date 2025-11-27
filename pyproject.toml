@@ -27,3 +27,8 @@ build-backend = "mesonpy"
 [tool.meson-python.args]
 # Since pyproject always does release builds, we want to enable LTO.
 setup = ["-Db_lto=true"]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.1",
+]

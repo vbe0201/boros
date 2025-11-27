@@ -17,6 +17,14 @@ namespace boros {
 
     namespace {
 
+        ALWAYS_INLINE auto OneLessThanNextPowerOfTwo(unsigned num) -> unsigned {
+            if (num == 1) {
+                return 0;
+            }
+
+            return std::numeric_limits<unsigned>::max() >> std::countl_zero(num - 1);
+        }
+
         ALWAYS_INLINE auto SetupRing(unsigned entries, io_uring_params *p) -> int {
             int res = static_cast<int>(syscall(__NR_io_uring_setup, entries, p));
             if (res < 0) [[unlikely]] {
@@ -116,13 +124,19 @@ namespace boros {
         io_uring_params params{};
 
         // Configure an explicit completion queue size, if given.
-        if (cq_entries != 0) {
+        if (cq_entries != 0 && sq_entries != cq_entries) {
             params.flags |= IORING_SETUP_CQSIZE;
 
             // The size of cq_entries must be greater than sq_entries
-            // and a power of two. This is an approximation.
+            // and a power of two. So pick the bigger one of those,
+            // and round up to the next power of two without overflowing.
             cq_entries = std::max(sq_entries, cq_entries);
-            params.cq_entries = 1U << (BITSIZEOF(cq_entries) - std::countl_zero(cq_entries));
+            cq_entries = OneLessThanNextPowerOfTwo(cq_entries);
+            if (cq_entries != std::numeric_limits<unsigned>::max()) {
+                ++cq_entries;
+            }
+
+            params.cq_entries = cq_entries;
         }
 
         // Clamp the submission queue size at the max number of entries.

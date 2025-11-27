@@ -13,8 +13,8 @@ namespace boros {
     /// This is kept in per-module state when configured so that the
     /// loops can access it for lazy creation on demand.
     struct EventLoopPolicy {
-        int sq_entries = 0;
-        int cq_entries = 0;
+        unsigned int sq_entries = 0;
+        unsigned int cq_entries = 0;
         int wqfd = -1;
 
         /// Registers the EventLoopPolicy as a Python class onto the module.

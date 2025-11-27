@@ -36,7 +36,7 @@ namespace boros {
     }
 
     auto SubmissionQueue::HasCapacityFor(unsigned num) const -> bool {
-        return (m_ring_entries - m_local_tail - *m_khead) > num;
+        return (m_ring_entries - (m_local_tail - *m_khead)) >= num;
     }
 
     auto SubmissionQueue::PushUnchecked() -> Submission {

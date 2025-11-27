@@ -6,10 +6,10 @@
 #include <cstdio>
 
 #include "extension.hpp"
+#include "object.h"
 
 namespace boros {
 
-    // TODO: Disable EventLoop.__new__
     // TODO: Redesign submissions into the queue
 
     namespace {
@@ -131,8 +131,9 @@ namespace boros {
         );
 
         constinit auto g_event_loop_policy_spec = python::TypeSpec<EventLoopPolicy>(
-            "EventLoopPolicy",
-            g_event_loop_policy_slots.data()
+            "_low_level.EventLoopPolicy",
+            g_event_loop_policy_slots.data(),
+            Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE
         );
 
         auto g_event_loop_methods = python::MethodTable(
@@ -140,14 +141,14 @@ namespace boros {
         );
 
         auto g_event_loop_slots = python::TypeSlotTable(
-            python::TypeSlot(Py_tp_new, python::DefaultNew<EventLoop>),
             python::TypeSlot(Py_tp_dealloc, python::DefaultDealloc<EventLoop>),
             python::TypeSlot(Py_tp_methods, g_event_loop_methods.data())
         );
 
         constinit auto g_event_loop_spec = python::TypeSpec<EventLoop>(
-            "EventLoop",
-            g_event_loop_slots.data()
+            "_low_level.EventLoop",
+            g_event_loop_slots.data(),
+            Py_TPFLAGS_DEFAULT | Py_TPFLAGS_DISALLOW_INSTANTIATION
         );
 
     }
