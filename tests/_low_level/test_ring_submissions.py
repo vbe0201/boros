@@ -11,7 +11,7 @@ def make_loop(sq_size: int, cq_size: int):
     destroy_event_loop()
 
 
-def test_sq_clamping():
+def test_queue_clamping():
     # Submission queue can't be zero-sized.
     with pytest.raises(OSError):
         make_loop(0, 0)
