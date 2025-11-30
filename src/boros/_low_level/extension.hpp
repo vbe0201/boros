@@ -5,12 +5,11 @@
 
 #include "python.hpp"
 
-#include "event_loop.hpp"
-
 namespace boros {
 
     /// State that is managed for every instantiation of this extension.
     struct ModuleState {
+        PyTypeObject *TaskType;
         PyTypeObject *EventLoopPolicyType;
         PyTypeObject *EventLoopType;
 

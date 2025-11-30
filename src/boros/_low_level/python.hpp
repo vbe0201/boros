@@ -9,7 +9,6 @@
 #include <array>
 #include <cassert>
 #include <cstddef>
-#include <string_view>
 #include <tuple>
 #include <type_traits>
 
@@ -48,42 +47,27 @@ namespace boros::python {
     /// Gets the per-module state through a Python type object.
     template <ModuleState State>
     ALWAYS_INLINE auto GetModuleStateFromType(PyTypeObject *tp) -> State& {
-        return GetState<State>(PyType_GetModule(tp));
+        return GetModuleState<State>(PyType_GetModule(tp));
     }
 
     /// Gets the per-module state through a Python object.
     template <ModuleState State>
     ALWAYS_INLINE auto GetModuleStateFromObject(PyObject *obj) -> State& {
-        return GetStateFromType<State>(Py_TYPE(obj));
-    }
-
-    namespace impl {
-
-        constexpr auto TrimSpecName(const char *name) -> const char* {
-            std::string_view sv{name};
-
-            auto pos = sv.rfind('.');
-            if (pos != std::string_view::npos) {
-                return sv.substr(pos + 1).data();
-            } else {
-                return sv.data();
-            }
-        }
-
+        return GetModuleStateFromType<State>(Py_TYPE(obj));
     }
 
     /// Instantiates a new type from a spec and binds it to a module.
     ALWAYS_INLINE auto AddTypeToModule(PyObject *module, PyType_Spec &spec) -> PyTypeObject* {
-        auto *tp = PyType_FromModuleAndSpec(module, &spec, nullptr);
+        auto *tp = reinterpret_cast<PyTypeObject*>(PyType_FromModuleAndSpec(module, &spec, nullptr));
         if (tp == nullptr) [[unlikely]] {
             return nullptr;
         }
 
-        if (PyModule_AddObjectRef(module, impl::TrimSpecName(spec.name), tp) < 0) [[unlikely]] {
+        if (PyModule_AddType(module, tp) < 0) [[unlikely]] {
             return nullptr;
         }
 
-        return reinterpret_cast<PyTypeObject*>(tp);
+        return tp;
     }
 
     /// Represents a Python extension module.
@@ -285,15 +269,39 @@ namespace boros::python {
         return reinterpret_cast<PyObject*>(Alloc<T>(tp));
     }
 
-    /// Deallocates a Python object by calling its C++ destructor,
-    /// then freeing the allocation.
+    /// Deallocates a Python object properly with respect to its C++
+    /// destructor.
     template <typename T>
     auto DefaultDealloc(PyObject *self) -> void {
         PyTypeObject *tp = Py_TYPE(self);
-        auto *tp_free = reinterpret_cast<freefunc>(PyType_GetSlot(tp, Py_tp_free));
 
+        // If this object participates in garbage collection, we must
+        // untrack it before we can destroy it.
+        if (PyType_HasFeature(tp, Py_TPFLAGS_HAVE_GC)) {
+            PyObject_GC_UnTrack(self);
+        }
+
+        // Clear references from the object. The garbage collector might
+        // call this, but it is also good to avoid code duplication on
+        // objects which don't participate in garbage collection.
+        auto *tp_clear = reinterpret_cast<inquiry>(PyType_GetSlot(tp, Py_tp_clear));
+        if (tp_clear != nullptr && tp_clear(self) < 0) {
+            PyErr_WriteUnraisable(self);
+        }
+
+        // Now call the C++ destructor of the object to do other cleanup
+        // that isn't related to Python.
         std::destroy_at(&reinterpret_cast<Object<T>*>(self)->inner);
+
+        // Lastly, deallocate the memory for the object.
+        auto *tp_free = reinterpret_cast<freefunc>(PyType_GetSlot(tp, Py_tp_free));
+        assert(tp_free != nullptr);
         tp_free(self);
+
+        // If the type is a heap type, remove a reference from it.
+        if (PyType_HasFeature(tp, Py_TPFLAGS_HEAPTYPE)) {
+            Py_DECREF(tp);
+        }
     }
 
     namespace impl {
@@ -355,7 +363,7 @@ namespace boros::python {
 
                 [&]<std::size_t... Is>(std::index_sequence<Is...>) ALWAYS_INLINE_LAMBDA {
                     if constexpr (InstanceMethod) {
-                        (FromPython(std::get<Is>(res), args[Is]), ...);
+                        (FromPython(&std::get<Is>(res), args[Is]), ...);
                     } else {
                         FromPython(&std::get<0>(res), self);
                         (FromPython(&std::get<Is + 1>(res), args[Is]), ...);
@@ -513,6 +521,11 @@ namespace boros::python {
         return {{members..., {nullptr, 0, 0, 0, nullptr}}};
     }
 
+    template <typename... Ps> requires (std::is_same_v<Ps, PyGetSetDef> && ...)
+    constexpr auto PropertyTable(Ps... properties) -> std::array<PyGetSetDef, sizeof...(Ps) + 1> {
+        return {{properties..., {nullptr, nullptr, nullptr, nullptr, nullptr}}};
+    }
+
     namespace impl {
 
         template <typename>
@@ -579,6 +592,24 @@ namespace boros::python {
             decltype(type::name),                                                 \
             offsetof(::boros::python::Object<type>, inner) + offsetof(type, name) \
         >(BOROS_STR(name) __VA_OPT__(,) __VA_ARGS__)
+
+    /// Defines a read-only property on a Python type which delegates to a
+    /// native C++ getter method.
+    template <auto Get>
+    ALWAYS_INLINE auto Property(const char *name, const char *doc = nullptr) -> PyGetSetDef {
+        using GetTraits = impl::FunctionTraits<decltype(Get)>;
+        using GetCls    = typename GetTraits::ClassType;
+
+        static_assert(!std::is_void_v<GetCls>, "Getter must be a member function");
+
+        constexpr auto Getter = [] (PyObject *ob, void *closure) -> PyObject* {
+            assert(closure == nullptr);
+            auto &unwrapped = reinterpret_cast<python::Object<GetCls>*>(ob)->Get();
+            return ToPython((unwrapped.*Get)());
+        };
+
+        return {name, Getter, nullptr, doc, nullptr};
+    }
 
     /// Creates a Python method by wrapping a given C++ function.
     /// Arguments and return types will be detected and converted
