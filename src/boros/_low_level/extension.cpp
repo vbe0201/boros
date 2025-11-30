@@ -2,12 +2,14 @@
 // SPDX-License-Identifier: ISC
 
 #include "extension.hpp"
+
 #include "event_loop.hpp"
-#include "python.hpp"
+#include "task.hpp"
 
 namespace boros {
 
     auto ModuleState::Traverse(visitproc visit, void *arg) -> int {
+        Py_VISIT(TaskType);
         Py_VISIT(EventLoopPolicyType);
         Py_VISIT(EventLoopType);
 
@@ -15,6 +17,7 @@ namespace boros {
     }
 
     auto ModuleState::Clear() -> int {
+        Py_CLEAR(TaskType);
         Py_CLEAR(EventLoopPolicyType);
         Py_CLEAR(EventLoopType);
 
@@ -29,6 +32,11 @@ namespace boros {
 
         auto ModuleExec(PyObject *mod) -> int {
             auto &state = python::GetModuleState<ModuleState>(mod);
+
+            state.TaskType = Task::Register(mod);
+            if (state.TaskType == nullptr) [[unlikely]] {
+                return -1;
+            }
 
             state.EventLoopPolicyType = EventLoopPolicy::Register(mod);
             if (state.EventLoopPolicyType == nullptr) [[unlikely]] {

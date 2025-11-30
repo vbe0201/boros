@@ -11,6 +11,7 @@ boros_low_level_sources = [
     '_low_level/mmap.cpp',
     '_low_level/ring.cpp',
     '_low_level/squeue.cpp',
+    '_low_level/task.cpp',
 ]
 
 py.install_sources(
