@@ -137,10 +137,10 @@ namespace boros {
         constexpr const char *TaskDoc =
             "A lightweight, concurrent thread of execution.\n\n"
             "Tasks are similar to OS threads, but they are managed by the boros scheduler\n"
-            "instead of the OS scheduler. This makes very cheap to create and switching\n"
-            "between tasks has very little overhead.\n\n"
-            "Task has no public constructor and appears immutable to Python code. Its\n"
-            "public members are mostly useful for introspection and debugging.";
+            "instead of the OS scheduler. This makes them cheap to create and there is\n"
+            "little overhead to switching between tasks.\n\n"
+            "Task has no public constructor and appears immutable to Python code.\n"
+            "Its public members are mostly useful for introspection and debugging.";
 
         auto TraverseTask(PyObject *ob, visitproc visit, void *arg) -> int {
             auto &task = reinterpret_cast<python::Object<Task>*>(ob)->Get();
@@ -154,7 +154,7 @@ namespace boros {
         }
 
         auto g_task_properties = python::PropertyTable(
-            python::Property<&Task::GetName>("name", "A string representation of the Task name."),
+            python::Property<&Task::GetName>("name", "A string representation of the task name."),
             python::Property<&Task::GetCoro>("coro", "The coroutine object associated with the Task.")
         );
 
