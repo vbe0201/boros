@@ -32,3 +32,6 @@ setup = ["-Db_lto=true"]
 dev = [
     "pytest>=9.0.1",
 ]
+docs = [
+    "sphinx>=9.0.0",
+]

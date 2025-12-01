@@ -105,7 +105,7 @@ namespace boros {
         if (loop == nullptr) [[unlikely]] {
             return;
         }
-        
+
         auto &sq = loop->Get().m_ring.GetSubmissionQueue();
         if (sq.HasCapacityFor(1)) {
             auto entry = sq.PushUnchecked();
