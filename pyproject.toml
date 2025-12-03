@@ -34,4 +34,6 @@ dev = [
 ]
 docs = [
     "sphinx>=9.0.0",
+    "sphinx-codeautolink>=0.17.5",
+    "sphinx-copybutton>=0.5.2",
 ]

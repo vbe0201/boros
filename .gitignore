@@ -6,6 +6,9 @@ dist/
 wheels/
 *.egg-info
 
+# Sphinx documentation
+docs/_build/
+
 # Virtual environments and other tools
 .venv/
 .mypy_cache/
