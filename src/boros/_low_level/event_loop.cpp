@@ -6,7 +6,6 @@
 #include <cstdio>
 
 #include "extension.hpp"
-#include "object.h"
 
 namespace boros {
 
@@ -25,7 +24,7 @@ namespace boros {
         auto &state    = python::GetModuleState<ModuleState>(mod.raw);
         auto *loop_key = state.local_event_loop;
 
-        auto *policy = python::Cast<EventLoopPolicy>(policy_, state.EventLoopPolicyType);
+        auto *policy = python::CastExact<EventLoopPolicy>(policy_, state.EventLoopPolicyType);
         if (policy == nullptr) [[unlikely]] {
             return nullptr;
         }
@@ -118,16 +117,16 @@ namespace boros {
 
     namespace {
 
-        auto g_event_loop_policy_members = python::MemberTable(
-            PythonMember(EventLoopPolicy, sq_entries),
-            PythonMember(EventLoopPolicy, cq_entries),
-            PythonMember(EventLoopPolicy, wqfd)
+        auto g_event_loop_policy_properties = python::PropertyTable(
+            python::Property<&EventLoopPolicy::GetSqEntries, &EventLoopPolicy::SetSqEntries>("sq_entries"),
+            python::Property<&EventLoopPolicy::GetCqEntries, &EventLoopPolicy::SetCqEntries>("cq_entries"),
+            python::Property<&EventLoopPolicy::GetWqFd, &EventLoopPolicy::SetWqFd>("wqfd")
         );
 
         auto g_event_loop_policy_slots = python::TypeSlotTable(
             python::TypeSlot(Py_tp_new, python::DefaultNew<EventLoopPolicy>),
             python::TypeSlot(Py_tp_dealloc, python::DefaultDealloc<EventLoopPolicy>),
-            python::TypeSlot(Py_tp_members, g_event_loop_policy_members.data())
+            python::TypeSlot(Py_tp_getset, g_event_loop_policy_properties.data())
         );
 
         constinit auto g_event_loop_policy_spec = python::TypeSpec<EventLoopPolicy>(

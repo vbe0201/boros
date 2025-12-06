@@ -24,6 +24,9 @@ py.extension_module(
     '_low_level',
     boros_low_level_sources,
     include_directories: include_directories('_low_level'),
+    dependencies: [
+        boros_binding_dep
+    ],
     install: true,
     subdir: 'boros',
     limited_api: '3.12',

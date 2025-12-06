@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "python.hpp"
+#include "binding/python.hpp"
 
 #include "ring.hpp"
 
@@ -15,10 +15,19 @@ namespace boros {
     struct EventLoopPolicy {
         unsigned int sq_entries = 0;
         unsigned int cq_entries = 0;
-        int wqfd = -1;
+        int wqfd                = -1;
+
+        auto GetSqEntries() const -> unsigned int { return sq_entries; }
+        auto SetSqEntries(unsigned int v) -> void { sq_entries = v; }
+
+        auto GetCqEntries() const -> unsigned int { return cq_entries; }
+        auto SetCqEntries(unsigned int v) -> void { cq_entries = v; }
+
+        auto GetWqFd() const -> int { return wqfd; }
+        auto SetWqFd(int v) -> void { wqfd = v; }
 
         /// Registers the EventLoopPolicy as a Python class onto the module.
-        static auto Register(PyObject *mod) -> PyTypeObject*;
+        static auto Register(PyObject *mod) -> PyTypeObject *;
     };
 
     struct EventLoop {
@@ -28,7 +37,7 @@ namespace boros {
     public:
         /// Creates a new event loop for the current thread given a
         /// creation policy and returns its instance.
-        static auto Create(python::Module mod, PyObject *policy) -> PyObject*;
+        static auto Create(python::Module mod, PyObject *policy) -> PyObject *;
 
         /// Destroys the active event loop on the current thread.
         /// No-op if  the event loop is not running.
@@ -36,10 +45,10 @@ namespace boros {
 
         /// Gets the active event loop on the current thread, or
         /// raises an exception if not set.
-        static auto Get(python::Module mod) -> PyObject*;
+        static auto Get(python::Module mod) -> PyObject *;
 
         /// Registers the EventLoop as a Python class onto the module.
-        static auto Register(PyObject *mod) -> PyTypeObject*;
+        static auto Register(PyObject *mod) -> PyTypeObject *;
 
     public:
         /// Performs one tick of the event loop. This advances all
@@ -52,4 +61,4 @@ namespace boros {
         static auto Nop(python::Module mod, int res) -> void;
     };
 
-}
+}  // namespace boros

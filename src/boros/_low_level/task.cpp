@@ -6,6 +6,7 @@
 #include <cassert>
 #include <cstddef>
 
+#include "binding/property.hpp"
 #include "extension.hpp"
 
 namespace boros {
@@ -154,8 +155,8 @@ namespace boros {
         }
 
         auto g_task_properties = python::PropertyTable(
-            python::Property<&Task::GetName>("name", "A string representation of the task name."),
-            python::Property<&Task::GetCoro>("coro", "The coroutine object associated with the Task.")
+            python::ReadOnlyProperty<&Task::GetName>("name", "A string representation of the task name."),
+            python::ReadOnlyProperty<&Task::GetCoro>("coro", "The coroutine object associated with the Task.")
         );
 
         // TODO: repr
