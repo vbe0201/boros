@@ -8,5 +8,4 @@ add_project_arguments(
 )
 
 subdir('boros_binding')
-subdir('boros_core')
 subdir('boros')
