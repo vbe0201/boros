@@ -39,10 +39,6 @@ namespace boros::io {
         /// Unmaps an existing mapping and resets pointer and size.
         /// Does nothing if this instance is not mapped.
         void Unmap();
-
-        /// Disables access to the memory for child processes after a
-        /// fork. Returns 0 on success, or a negative errno value.
-        int DontFork();
     };
 
 }  // namespace boros::io

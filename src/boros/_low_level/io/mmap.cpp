@@ -44,12 +44,4 @@ namespace boros::io {
         }
     }
 
-    int Mmap::DontFork() {
-        if (madvise(ptr, size, MADV_DONTFORK) != 0) {
-            return -errno;
-        }
-
-        return 0;
-    }
-
 }  // namespace boros::io
