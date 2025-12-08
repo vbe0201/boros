@@ -88,7 +88,7 @@ namespace boros {
     }
 
     auto EventLoop::Tick() -> void {
-        int res = m_ring.SubmitAndWait(1);
+        int res = m_ring.Wait(1);
         if (res < 0) [[unlikely]] {
             RaiseOsErrorFromRing(res);
             return;
@@ -107,7 +107,7 @@ namespace boros {
 
         auto &sq = loop->Get().m_ring.GetSubmissionQueue();
         if (sq.HasCapacityFor(1)) {
-            auto entry = sq.PushUnchecked();
+            auto entry = sq.Push();
             entry.Prepare(IORING_OP_NOP, -1, nullptr, res, 0);
             entry.sqe->nop_flags |= IORING_NOP_INJECT_RESULT;
         } else {

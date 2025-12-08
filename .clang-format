@@ -55,10 +55,12 @@ IncludeCategories:
     Priority: 1
   - Regex: '^"binding/python\.hpp"$'
     Priority: 2
+  - Regex: '^<(linux/.*|sys/.*|unistd)\.h>$'
+    Priority: 4
   - Regex: '^<.*>$'
     Priority: 3
   - Regex: '^".*"$'
-    Priority: 4
+    Priority: 5
 
 IndentCaseLabels: false
 IndentWidth: 4

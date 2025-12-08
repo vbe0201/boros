@@ -60,29 +60,22 @@ namespace boros {
             return 0;
         }
 
-        auto g_low_level_methods = python::MethodTable(
-            python::Method<EventLoop::Create>("create_event_loop"),
-            python::Method<EventLoop::Destroy>("destroy_event_loop"),
-            python::Method<EventLoop::Get>("get_event_loop"),
-            python::Method<EventLoop::Nop>("nop")
-        );
+        auto g_low_level_methods = python::MethodTable(python::Method<EventLoop::Create>("create_event_loop"),
+                                                       python::Method<EventLoop::Destroy>("destroy_event_loop"),
+                                                       python::Method<EventLoop::Get>("get_event_loop"),
+                                                       python::Method<EventLoop::Nop>("nop"));
 
         auto g_low_level_module_slots = python::ModuleSlotTable(
             python::ModuleSlot(Py_mod_exec, &ModuleExec),
-            python::ModuleSlot(Py_mod_multiple_interpreters, Py_MOD_PER_INTERPRETER_GIL_SUPPORTED)
-        );
+            python::ModuleSlot(Py_mod_multiple_interpreters, Py_MOD_PER_INTERPRETER_GIL_SUPPORTED));
 
-        constinit auto g_low_level_module = LowLevelModuleDef(
-            "_low_level",
-            "",
-            g_low_level_methods.data(),
-            g_low_level_module_slots.data()
-        );
+        constinit auto g_low_level_module =
+            LowLevelModuleDef("_low_level", "", g_low_level_methods.data(), g_low_level_module_slots.data());
 
         PyMODINIT_FUNC PyInit__low_level() {
             return g_low_level_module.CreateModule();
         }
 
-    }
+    }  // namespace
 
-}
+}  // namespace boros

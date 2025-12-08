@@ -1,7 +1,7 @@
 // This source file is part of the boros project.
 // SPDX-License-Identifier: ISC
 
-#include "ring.hpp"
+#include "io/ring.hpp"
 
 #include <algorithm>
 #include <bit>
@@ -11,70 +11,95 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "macros.hpp"
-
-namespace boros {
+namespace boros::io {
 
     namespace {
 
-        ALWAYS_INLINE auto OneLessThanNextPowerOfTwo(unsigned num) -> unsigned {
-            if (num == 1) {
+        unsigned CalculateCqSize(unsigned sq, unsigned cq) {
+            constexpr unsigned MaxValue = std::numeric_limits<unsigned>::max();
+
+            // An explicit completion queue size must meet two criteria:
+            //   1. It must be greater than sq.
+            //   2. It must be a power of two.
+            //
+            // So this is our attempt at wrangling whatever cq value we
+            // get into one that gets accepted by io_uring_setup.
+
+            // Check if it makes sense to set up an explicit cq size.
+            if (cq == 0 || sq == MaxValue || sq == cq) {
                 return 0;
             }
 
-            return std::numeric_limits<unsigned>::max() >> std::countl_zero(num - 1);
+            // Pick the bigger of both values as our baseline. This is
+            // guaranteed to be at least 1 since we checked cq already.
+            cq = std::max(sq, cq);
+
+            // Calculate one less than the next power of two.
+            if (cq == 1) {
+                cq = 0;
+            }
+            cq = MaxValue >> std::countl_zero(cq - 1);
+
+            // If we're not about to overflow the integer, add 1 to get
+            // the next power of two. Otherwise, leave the value as-is
+            // to not violate rule 1.
+            if (cq != MaxValue) {
+                ++cq;
+            }
+
+            return cq;
         }
 
-        ALWAYS_INLINE auto SetupRing(unsigned entries, io_uring_params *p) -> int {
+        int SetupRing(unsigned entries, io_uring_params *p) {
             int res = static_cast<int>(syscall(__NR_io_uring_setup, entries, p));
-            if (res < 0) [[unlikely]] {
+            if (res < 0) {
                 return -errno;
             }
 
             return res;
         }
 
-        ALWAYS_INLINE auto RegisterRing(int fd, unsigned op, const void *arg, unsigned nargs) -> int {
+        int RegisterRing(int fd, unsigned op, const void *arg, unsigned nargs) {
             int res = static_cast<int>(syscall(__NR_io_uring_register, fd, op, arg, nargs));
-            if (res < 0) [[unlikely]] {
+            if (res < 0) {
                 return -errno;
             }
 
             return res;
         }
 
-        ALWAYS_INLINE auto EnterRing(int fd, unsigned nsubmit, unsigned want, unsigned flags, void *arg, std::size_t size) -> int {
+        int EnterRing(int fd, unsigned nsubmit, unsigned want, unsigned flags, void *arg, std::size_t size) {
             int res = static_cast<int>(syscall(__NR_io_uring_enter, fd, nsubmit, want, flags, arg, size));
-            if (res < 0) [[unlikely]] {
+            if (res < 0) {
                 return -errno;
             }
 
             return res;
         }
 
-    }
+    }  // namespace
 
-    IoRing::~IoRing() {
+    Ring::~Ring() {
         this->Finalize();
     }
 
-    auto IoRing::Setup(unsigned entries, io_uring_params &p) -> int {
+    int Ring::Setup(unsigned entries, io_uring_params &p) {
         // Try creating the ring without SQARRAY first for kernel 6.6+.
         p.flags |= IORING_SETUP_NO_SQARRAY;
         int fd = SetupRing(entries, &p);
-        if (fd < 0 && fd != -EINVAL) [[unlikely]] {
+        if (fd < 0 && fd != -EINVAL) {
             return fd;
         }
 
         // That didn't work, so try again without the flag for older kernels.
         p.flags &= ~IORING_SETUP_NO_SQARRAY;
         fd = SetupRing(entries, &p);
-        if (fd < 0) [[unlikely]] {
+        if (fd < 0) {
             return fd;
         }
 
         // Map in the created ring queues.
-        if (int res = this->SetupWithFile(fd, p); res != 0) [[unlikely]] {
+        if (int res = this->SetupWithFile(fd, p); res != 0) {
             close(fd);
             return res;
         }
@@ -82,30 +107,28 @@ namespace boros {
         return 0;
     }
 
-    auto IoRing::SetupWithFile(int fd, io_uring_params &p) -> int {
+    int Ring::SetupWithFile(int fd, io_uring_params &p) {
         Mmap scq_map;
         Mmap sqe_map;
 
-        // If the kernel does not support a single mmap for both queues,
-        // the user is running on an unsupported kernel.
-        if ((p.features & IORING_FEAT_SINGLE_MMAP) == 0) [[unlikely]] {
+        // Support for a single mmap for both queues is required,
+        // otherwise the user is running an unsupported kernel.
+        if ((p.features & IORING_FEAT_SINGLE_MMAP) == 0) {
             return -EOPNOTSUPP;
         }
 
         // Determine queue sizes for the ring.
-        std::size_t scq_len = std::max(
-            p.sq_off.array + p.sq_entries * sizeof(unsigned),
-            p.cq_off.cqes + p.cq_entries * sizeof(io_uring_cqe)
-        );
+        std::size_t scq_len = std::max(p.sq_off.array + p.sq_entries * sizeof(unsigned),
+                                       p.cq_off.cqes + p.cq_entries * sizeof(io_uring_cqe));
         std::size_t sqe_len = p.sq_entries * sizeof(io_uring_sqe);
 
-        // Map the submission and completion queues in.
-        if (int res = scq_map.Map(fd, IORING_OFF_SQ_RING, scq_len); res != 0) [[unlikely]] {
+        // Map the queues in.
+        if (int res = scq_map.Map(fd, IORING_OFF_SQ_RING, scq_len); res != 0) {
             return res;
         }
 
-        // Map the submission queue slots in.
-        if (int res = sqe_map.Map(fd, IORING_OFF_SQES, sqe_len); res != 0) [[unlikely]] {
+        // Map the submission entries in.
+        if (int res = sqe_map.Map(fd, IORING_OFF_SQES, sqe_len); res != 0) {
             return res;
         }
 
@@ -120,22 +143,13 @@ namespace boros {
         return 0;
     }
 
-    auto IoRing::Initialize(unsigned sq_entries, unsigned cq_entries) -> int {
+    int Ring::Initialize(unsigned sq_entries, unsigned cq_entries) {
         io_uring_params params{};
 
-        // Configure an explicit completion queue size, if given.
-        if (cq_entries != 0 && sq_entries != cq_entries) {
+        // Configure a completion queue size, if given.
+        cq_entries = CalculateCqSize(sq_entries, cq_entries);
+        if (cq_entries != 0) {
             params.flags |= IORING_SETUP_CQSIZE;
-
-            // The size of cq_entries must be greater than sq_entries
-            // and a power of two. So pick the bigger one of those,
-            // and round up to the next power of two without overflowing.
-            cq_entries = std::max(sq_entries, cq_entries);
-            cq_entries = OneLessThanNextPowerOfTwo(cq_entries);
-            if (cq_entries != std::numeric_limits<unsigned>::max()) {
-                ++cq_entries;
-            }
-
             params.cq_entries = cq_entries;
         }
 
@@ -163,7 +177,7 @@ namespace boros {
         return this->Setup(sq_entries, params);
     }
 
-    auto IoRing::Finalize() -> void {
+    void Ring::Finalize() {
         m_scq_map.Unmap();
         m_sqe_map.Unmap();
 
@@ -177,7 +191,7 @@ namespace boros {
         }
     }
 
-    auto IoRing::RegisterRaw(unsigned opcode, const void *arg, unsigned nargs) const -> int {
+    int Ring::Register(unsigned opcode, const void *arg, unsigned nargs) const {
         int fd;
 
         if (m_registered && (m_features & IORING_FEAT_REG_REG_RING) != 0) {
@@ -197,33 +211,21 @@ namespace boros {
         return RegisterRing(fd, opcode, arg, nargs);
     }
 
-    auto IoRing::RegisterFilesSparse(unsigned nfiles) const -> int {
-        io_uring_rsrc_register reg{};
-        reg.nr    = nfiles;
-        reg.flags = IORING_RSRC_REGISTER_SPARSE;
-
-        return this->RegisterRaw(IORING_REGISTER_FILES2, &reg, sizeof(reg));
+    int Ring::Enable() const {
+        return this->Register(IORING_REGISTER_ENABLE_RINGS, nullptr, 0);
     }
 
-    auto IoRing::UnregisterFiles() const -> int {
-        return this->RegisterRaw(IORING_UNREGISTER_FILES, nullptr, 0);
-    }
-
-    auto IoRing::Enable() const -> int {
-        return this->RegisterRaw(IORING_REGISTER_ENABLE_RINGS, nullptr, 0);
-    }
-
-    auto IoRing::RegisterRingFd() -> int {
+    int Ring::RegisterRingFd() {
         io_uring_rsrc_update upd{};
         upd.data   = m_ring_fd;
         upd.offset = -1U;
 
-        if (m_registered) [[unlikely]] {
+        if (m_registered) {
             return -EEXIST;
         }
 
-        int res = this->RegisterRaw(IORING_REGISTER_RING_FDS, &upd, 1);
-        if (res == 1) [[likely]] {
+        int res = this->Register(IORING_REGISTER_RING_FDS, &upd, 1);
+        if (res == 1) {
             m_enter_fd   = static_cast<int>(upd.offset);
             m_registered = true;
         }
@@ -231,16 +233,16 @@ namespace boros {
         return res;
     }
 
-    auto IoRing::UnregisterRingFd() -> int {
+    int Ring::UnregisterRingFd() {
         io_uring_rsrc_update upd{};
         upd.offset = m_enter_fd;
 
-        if (m_ring_fd == -1 || !m_registered) [[unlikely]] {
+        if (m_ring_fd == -1 || !m_registered) {
             return -EINVAL;
         }
 
-        int res = this->RegisterRaw(IORING_UNREGISTER_RING_FDS, &upd, 1);
-        if (res == 1) [[likely]] {
+        int res = this->Register(IORING_UNREGISTER_RING_FDS, &upd, 1);
+        if (res == 1) {
             m_enter_fd   = m_ring_fd;
             m_registered = false;
         }
@@ -248,27 +250,30 @@ namespace boros {
         return res;
     }
 
-    auto IoRing::Enter(unsigned want, __kernel_timespec *ts) const -> int {
-        unsigned num_submit  = m_submission_queue.Synchronize();
+    int Ring::Enter(unsigned want, __kernel_timespec *ts) const {
+        unsigned nsubmit     = m_submission_queue.GetSize();
         unsigned enter_flags = 0;
         void *enter_arg      = nullptr;
         std::size_t arg_size = 0;
 
-        // If the CQ overflowed, we must enter the kernel to flush the
-        // events to the queue. This doesn't happen automatically.
-        bool cq_needs_enter = want > 0 || m_submission_queue.NeedCompletionQueueFlush();
+        // Determine if we need to enter the kernel and wait for events.
+        // This is the case when we are waiting for some completions or
+        // when the CQ overflowed and must be flushed.
+        bool need_getevents = want > 0 || m_submission_queue.NeedCompletionQueueFlush();
 
-        // Prepare a timeout argument, if we have one.
+        // If we have a timeout, prepare the argument.
         io_uring_getevents_arg arg;
         if (ts != nullptr) {
-            arg = {0, 0, 0, reinterpret_cast<std::uintptr_t>(ts)};
-            enter_flags |= IORING_ENTER_EXT_ARG;
+            arg       = {0, 0, 0, reinterpret_cast<std::uintptr_t>(ts)};
             enter_arg = &arg;
             arg_size  = sizeof(arg);
+            enter_flags |= IORING_ENTER_EXT_ARG;
         }
 
-        if (num_submit > 0 || cq_needs_enter) {
-            if (cq_needs_enter) {
+        // If we have submissions or need to wait for events, enter the
+        // kernel with appropriate flags.
+        if (nsubmit > 0 || need_getevents) {
+            if (need_getevents) {
                 enter_flags |= IORING_ENTER_GETEVENTS;
             }
 
@@ -276,24 +281,27 @@ namespace boros {
                 enter_flags |= IORING_ENTER_REGISTERED_RING;
             }
 
-            return EnterRing(m_enter_fd, num_submit, want, enter_flags, enter_arg, arg_size);
+            return EnterRing(m_enter_fd, nsubmit, want, enter_flags, enter_arg, arg_size);
         }
 
         return 0;
     }
 
-    auto IoRing::Submit() const -> int {
-        return this->SubmitAndWait(0);
+    int Ring::Submit() const {
+        return this->Enter(0, nullptr);
     }
 
-    auto IoRing::SubmitAndWait(unsigned want, std::optional<std::chrono::milliseconds> timeout) const -> int {
+    int Ring::Wait(unsigned want, std::optional<std::chrono::milliseconds> timeout) const {
         constexpr std::chrono::seconds MinSecs{0};
         constexpr std::chrono::nanoseconds MinNanos{0};
         constexpr std::chrono::nanoseconds MaxNanos{999'999'999};
 
+        // If we have a timeout, convert it into a __kernel_timespec
+        // as a deadline. Otherwise, wait indefinitely.
         if (timeout) {
-            auto secs  = std::max(std::chrono::duration_cast<std::chrono::seconds>(*timeout), MinSecs);
-            auto nanos = std::clamp(std::chrono::duration_cast<std::chrono::nanoseconds>(*timeout - secs), MinNanos, MaxNanos);
+            auto secs = std::max(std::chrono::duration_cast<std::chrono::seconds>(*timeout), MinSecs);
+            auto nanos =
+                std::clamp(std::chrono::duration_cast<std::chrono::nanoseconds>(*timeout - secs), MinNanos, MaxNanos);
             __kernel_timespec ts{secs.count(), nanos.count()};
 
             return this->Enter(want, &ts);
@@ -302,4 +310,4 @@ namespace boros {
         }
     }
 
-}
+}  // namespace boros::io

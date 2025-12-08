@@ -5,5 +5,5 @@
 # making a native extension module as much as possible.
 
 boros_binding_dep = declare_dependency(
-    include_directories: include_directories('.')
+    include_directories: include_directories('include'),
 )

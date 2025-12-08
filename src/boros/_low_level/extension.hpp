@@ -28,4 +28,4 @@ namespace boros {
     /// The module definition type this extension type is exposing.
     using LowLevelModuleDef = boros::python::ModuleDefinition<ModuleState>;
 
-}
+}  // namespace boros

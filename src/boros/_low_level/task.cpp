@@ -21,20 +21,20 @@ namespace boros {
         assert(!link->IsLinked());
 
         auto *last_prev = link->prev;
-        link->prev = prev;
+        link->prev      = prev;
         last_prev->next = this;
-        prev->next = link;
-        prev = last_prev;
+        prev->next      = link;
+        prev            = last_prev;
     }
 
     auto Task::ListLink::LinkNext(ListLink *link) -> void {
         assert(!link->IsLinked());
 
         auto *last_prev = link->prev;
-        link->prev = this;
+        link->prev      = this;
         last_prev->next = next;
-        next->prev = last_prev;
-        next = link;
+        next->prev      = last_prev;
+        next            = link;
     }
 
     auto Task::ListLink::Unlink() -> void {
@@ -43,43 +43,43 @@ namespace boros {
         prev = next = this;
     }
 
-    auto Task::List::ToLink(Task &v) -> ListLink* {
-        auto *link = reinterpret_cast<std::byte*>(&v) + offsetof(Task, link);
-        return reinterpret_cast<ListLink*>(link);
+    auto Task::List::ToLink(Task &v) -> ListLink * {
+        auto *link = reinterpret_cast<std::byte *>(&v) + offsetof(Task, link);
+        return reinterpret_cast<ListLink *>(link);
     }
 
-    auto Task::List::ToLink(const Task &v) -> const ListLink* {
-        auto *link = reinterpret_cast<const std::byte*>(&v) + offsetof(Task, link);
-        return reinterpret_cast<const ListLink*>(link);
+    auto Task::List::ToLink(const Task &v) -> const ListLink * {
+        auto *link = reinterpret_cast<const std::byte *>(&v) + offsetof(Task, link);
+        return reinterpret_cast<const ListLink *>(link);
     }
 
-    auto Task::List::ToTask(ListLink *v) -> Task& {
-        auto *parent = reinterpret_cast<std::byte*>(v) - offsetof(Task, link);
-        return *reinterpret_cast<Task*>(parent);
+    auto Task::List::ToTask(ListLink *v) -> Task & {
+        auto *parent = reinterpret_cast<std::byte *>(v) - offsetof(Task, link);
+        return *reinterpret_cast<Task *>(parent);
     }
 
-    auto Task::List::ToTask(const ListLink *v) -> const Task& {
-        auto *parent = reinterpret_cast<const std::byte*>(v) - offsetof(Task, link);
-        return *reinterpret_cast<const Task*>(parent);
+    auto Task::List::ToTask(const ListLink *v) -> const Task & {
+        auto *parent = reinterpret_cast<const std::byte *>(v) - offsetof(Task, link);
+        return *reinterpret_cast<const Task *>(parent);
     }
 
     auto Task::List::IsEmpty() const -> bool {
         return !m_head.IsLinked();
     }
 
-    auto Task::List::GetBack() -> Task& {
+    auto Task::List::GetBack() -> Task & {
         return ToTask(m_head.prev);
     }
 
-    auto Task::List::GetBack() const -> const Task& {
+    auto Task::List::GetBack() const -> const Task & {
         return ToTask(m_head.prev);
     }
 
-    auto Task::List::GetFront() -> Task& {
+    auto Task::List::GetFront() -> Task & {
         return ToTask(m_head.next);
     }
 
-    auto Task::List::GetFront() const -> const Task& {
+    auto Task::List::GetFront() const -> const Task & {
         return ToTask(m_head.next);
     }
 
@@ -111,7 +111,7 @@ namespace boros {
         }
     }
 
-    auto Task::Create(python::Module mod, PyObject *name, PyObject *coro) -> python::Object<Task>* {
+    auto Task::Create(python::Module mod, PyObject *name, PyObject *coro) -> python::Object<Task> * {
         auto &state = python::GetModuleState<ModuleState>(mod.raw);
 
         auto *task = python::Alloc<Task>(state.TaskType);
@@ -123,63 +123,54 @@ namespace boros {
         return task;
     }
 
-    auto Task::GetName() const -> PyObject* {
+    auto Task::GetName() const -> PyObject * {
         assert(name != nullptr);
         return Py_NewRef(name);
     }
 
-    auto Task::GetCoro() const -> PyObject* {
+    auto Task::GetCoro() const -> PyObject * {
         assert(coro != nullptr);
         return Py_NewRef(coro);
     }
 
     namespace {
 
-        constexpr const char *TaskDoc =
-            "A lightweight, concurrent thread of execution.\n\n"
-            "Tasks are similar to OS threads, but they are managed by the boros scheduler\n"
-            "instead of the OS scheduler. This makes them cheap to create and there is\n"
-            "little overhead to switching between tasks.\n\n"
-            "Task has no public constructor and appears immutable to Python code.\n"
-            "Its public members are mostly useful for introspection and debugging.";
+        constexpr const char *TaskDoc = "A lightweight, concurrent thread of execution.\n\n"
+                                        "Tasks are similar to OS threads, but they are managed by the boros scheduler\n"
+                                        "instead of the OS scheduler. This makes them cheap to create and there is\n"
+                                        "little overhead to switching between tasks.\n\n"
+                                        "Task has no public constructor and appears immutable to Python code.\n"
+                                        "Its public members are mostly useful for introspection and debugging.";
 
         auto TraverseTask(PyObject *ob, visitproc visit, void *arg) -> int {
-            auto &task = reinterpret_cast<python::Object<Task>*>(ob)->Get();
+            auto &task = reinterpret_cast<python::Object<Task> *>(ob)->Get();
             Py_VISIT(Py_TYPE(ob));
             return task.Traverse(visit, arg);
         }
 
         auto ClearTask(PyObject *ob) -> int {
-            auto &task = reinterpret_cast<python::Object<Task>*>(ob)->Get();
+            auto &task = reinterpret_cast<python::Object<Task> *>(ob)->Get();
             return task.Clear();
         }
 
         auto g_task_properties = python::PropertyTable(
             python::ReadOnlyProperty<&Task::GetName>("name", "A string representation of the task name."),
-            python::ReadOnlyProperty<&Task::GetCoro>("coro", "The coroutine object associated with the Task.")
-        );
+            python::ReadOnlyProperty<&Task::GetCoro>("coro", "The coroutine object associated with the Task."));
 
         // TODO: repr
         // TODO: await frames stackwalking
         // TODO: contextvars
-        auto g_task_slots = python::TypeSlotTable(
-            python::TypeSlot(Py_tp_doc, const_cast<char*>(TaskDoc)),
-            python::TypeSlot(Py_tp_dealloc, &python::DefaultDealloc<Task>),
-            python::TypeSlot(Py_tp_traverse, &TraverseTask),
-            python::TypeSlot(Py_tp_clear, &ClearTask),
-            python::TypeSlot(Py_tp_getset, g_task_properties.data())
-        );
+        auto g_task_slots = python::TypeSlotTable(python::TypeSlot(Py_tp_doc, const_cast<char *>(TaskDoc)),
+                                                  python::TypeSlot(Py_tp_dealloc, &python::DefaultDealloc<Task>),
+                                                  python::TypeSlot(Py_tp_traverse, &TraverseTask),
+                                                  python::TypeSlot(Py_tp_clear, &ClearTask),
+                                                  python::TypeSlot(Py_tp_getset, g_task_properties.data()));
 
         constinit auto g_task_spec = python::TypeSpec<Task>(
-            "_low_level.Task",
-            g_task_slots.data(),
-            Py_TPFLAGS_DEFAULT
-                | Py_TPFLAGS_HAVE_GC
-                | Py_TPFLAGS_IMMUTABLETYPE
-                | Py_TPFLAGS_DISALLOW_INSTANTIATION
-        );
+            "_low_level.Task", g_task_slots.data(),
+            Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_IMMUTABLETYPE | Py_TPFLAGS_DISALLOW_INSTANTIATION);
 
-    }
+    }  // namespace
 
     auto Task::Traverse(visitproc visit, void *arg) -> int {
         Py_VISIT(name);
@@ -193,8 +184,8 @@ namespace boros {
         return 0;
     }
 
-    auto Task::Register(PyObject *mod) -> PyTypeObject* {
+    auto Task::Register(PyObject *mod) -> PyTypeObject * {
         return python::AddTypeToModule(mod, g_task_spec);
     }
 
-}
+}  // namespace boros

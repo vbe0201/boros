@@ -5,7 +5,7 @@
 
 #include "binding/python.hpp"
 
-#include "ring.hpp"
+#include "io/ring.hpp"
 
 namespace boros {
 
@@ -32,7 +32,7 @@ namespace boros {
 
     struct EventLoop {
     private:
-        IoRing m_ring;
+        io::Ring m_ring;
 
     public:
         /// Creates a new event loop for the current thread given a

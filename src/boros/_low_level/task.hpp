@@ -32,22 +32,22 @@ namespace boros {
             ListLink m_head;
 
         private:
-            static auto ToLink(Task &v) -> ListLink*;
-            static auto ToLink(const Task &v) -> const ListLink*;
+            static auto ToLink(Task &v) -> ListLink *;
+            static auto ToLink(const Task &v) -> const ListLink *;
 
-            static auto ToTask(ListLink *v) -> Task&;
-            static auto ToTask(const ListLink *v) -> const Task&;
+            static auto ToTask(ListLink *v) -> Task &;
+            static auto ToTask(const ListLink *v) -> const Task &;
 
         public:
             List() = default;
 
             auto IsEmpty() const -> bool;
 
-            auto GetBack() -> Task&;
-            auto GetBack() const -> const Task&;
+            auto GetBack() -> Task &;
+            auto GetBack() const -> const Task &;
 
-            auto GetFront() -> Task&;
-            auto GetFront() const -> const Task&;
+            auto GetFront() -> Task &;
+            auto GetFront() const -> const Task &;
 
             auto PushBack(Task &v) -> void;
             auto PushFront(Task &v) -> void;
@@ -69,13 +69,13 @@ namespace boros {
 
         /// Allocates a new Task object instance and fills it with
         /// the given metadata.
-        static auto Create(python::Module mod, PyObject *name, PyObject *coro) -> python::Object<Task>*;
+        static auto Create(python::Module mod, PyObject *name, PyObject *coro) -> python::Object<Task> *;
 
         /// Gets the name of this Task as a Python string object.
-        auto GetName() const -> PyObject*;
+        auto GetName() const -> PyObject *;
 
         /// Gets the coroutine object associated with this Task.
-        auto GetCoro() const -> PyObject*;
+        auto GetCoro() const -> PyObject *;
 
     public:
         /// Traverses the Task state during garbage collection.
@@ -85,7 +85,7 @@ namespace boros {
         auto Clear() -> int;
 
         /// Registers Task as a Python class onto the module.
-        static auto Register(PyObject *mod) -> PyTypeObject*;
+        static auto Register(PyObject *mod) -> PyTypeObject *;
     };
 
-}
+}  // namespace boros
