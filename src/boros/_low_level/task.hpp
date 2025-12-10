@@ -69,7 +69,7 @@ namespace boros {
 
         /// Allocates a new Task object instance and fills it with
         /// the given metadata.
-        static auto Create(python::Module mod, PyObject *name, PyObject *coro) -> python::Object<Task> *;
+        static auto Create(python::Module mod, PyObject *name, PyObject *coro) -> python::ObjectRef<Task>;
 
         /// Gets the name of this Task as a Python string object.
         auto GetName() const -> PyObject *;

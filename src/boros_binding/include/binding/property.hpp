@@ -42,8 +42,8 @@ namespace boros::python {
         constexpr auto Getter = [](PyObject *ob, void *closure) -> PyObject * {
             static_cast<void>(closure);
 
-            auto &unwrapped = reinterpret_cast<Object<GetCls> *>(ob)->inner;
-            return ToPython((unwrapped.*Get)());
+            ObjectRef<GetCls> ref{ob};
+            return ToPython(((*ref).*Get)());
         };
 
         return {name, Getter, nullptr, doc, nullptr};
@@ -68,14 +68,14 @@ namespace boros::python {
         constexpr auto Getter = [](PyObject *ob, void *closure) -> PyObject * {
             static_cast<void>(closure);
 
-            auto &unwrapped = reinterpret_cast<Object<GetCls> *>(ob)->inner;
-            return ToPython((unwrapped.*Get)());
+            ObjectRef<GetCls> ref{ob};
+            return ToPython(((*ref).*Get)());
         };
 
         constexpr auto Setter = [](PyObject *ob, PyObject *v, void *closure) -> int {
             static_cast<void>(closure);
 
-            auto &unwrapped = reinterpret_cast<Object<SetCls> *>(ob)->inner;
+            ObjectRef<SetCls> ref{ob};
             if (v != nullptr) {
                 // Setting the property to a non-null value, so try to
                 // parse the expected value type first.
@@ -84,11 +84,11 @@ namespace boros::python {
                     return -1;
                 }
 
-                (unwrapped.*Set)(std::move(arg));
+                ((*ref).*Set)(std::move(arg));
             } else {
                 // Here we must clear the property, so we just pass a
                 // default value and let the setter do the rest.
-                (unwrapped.*Set)(SetArg{});
+                ((*ref).*Set)(SetArg{});
             }
 
             return 0;

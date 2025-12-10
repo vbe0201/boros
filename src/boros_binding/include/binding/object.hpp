@@ -6,6 +6,7 @@
 #include <Python.h>
 
 #include <cassert>
+#include <cstddef>
 
 namespace boros::python {
 
@@ -47,42 +48,67 @@ namespace boros::python {
     // In order to instantiate a type and bind it to a definining
     // module, use the AddTypeToModule helper.
 
-    /// Represents an ABI compatible Python object with an inner C++
-    /// value payload. This decouples the ABI requirements from the
-    /// business logic of a class.
-    template <typename T>
-    struct Object {
+    /// A helper that can be used to allocate an ABI compatible
+    /// Python object wrapping an arbitrary C++ type.
+    struct ObjectStorage {
         PyObject_HEAD
-        union {
-            T inner;
+        std::byte body[0];
+    };
+
+    namespace impl {
+
+        template <typename T>
+        struct SizedObjectStorageForAlloc {
+            PyObject_HEAD
+            std::byte body[sizeof(T)];
         };
 
-        T &Get() { return inner; }
+    }  // namespace impl
 
-        T &operator*() { return inner; }
-        T *operator->() { return &inner; }
+    /// Provides a typed handle to a Python object allocated as an
+    /// ObjectStorage instance. This allows us to access its body
+    /// without violating strict aliasing.
+    template <typename T>
+    struct ObjectRef {
+    public:
+        ObjectStorage *storage;
 
-        operator PyObject *() { return reinterpret_cast<PyObject *>(this); }
+    public:
+        explicit ObjectRef(std::nullptr_t) : storage(nullptr) {}
+
+        explicit ObjectRef(PyObject *ob) : storage(reinterpret_cast<ObjectStorage *>(ob)) {}
+
+        template <typename U>
+        explicit ObjectRef(ObjectRef<U> rhs) : storage(rhs.GetStorage()) {}
+
+        T *Get() { return std::launder(reinterpret_cast<T *>(&storage->body)); }
+
+        T &operator*() { return *this->Get(); }
+        T *operator->() { return this->Get(); }
+
+        operator bool() const { return storage != nullptr; }
+        operator PyObject *() { return reinterpret_cast<PyObject *>(storage); }
     };
 
     /// Casts a Python object to a concrete object type. This performs
     /// an isinstance() check with the given type object. When the
     /// cast fails, an exception is set and nullptr is returned.
     template <typename T>
-    Object<T> *CastExact(PyObject *ob, PyTypeObject *tp) {
+    ObjectRef<T> CastExact(PyObject *ob, PyTypeObject *tp) {
         if (int res = PyObject_IsInstance(ob, reinterpret_cast<PyObject *>(tp)); res != 1) {
             if (res == 0) {
                 PyErr_SetString(PyExc_TypeError, "received invalid object type");
             }
-            return nullptr;
+            return ObjectRef<T>{nullptr};
         }
 
-        return reinterpret_cast<Object<T> *>(ob);
+        return ObjectRef<T>{ob};
     }
 
     /// Allocates a new Python object of the given type.
-    template <typename T>
-    Object<T> *Alloc(PyTypeObject *tp) {
+    template <typename T, typename... Args>
+        requires(alignof(T) <= alignof(PyObject))
+    ObjectRef<T> Alloc(PyTypeObject *tp, Args &&...args) {
 #ifdef Py_LIMITED_API
         auto *tp_alloc = reinterpret_cast<allocfunc>(PyType_GetSlot(tp, Py_tp_alloc));
 #else
@@ -90,9 +116,9 @@ namespace boros::python {
 #endif
 
         assert(tp_alloc != nullptr);
-        auto *self = reinterpret_cast<Object<T> *>(tp_alloc(tp, 0));
-        if (self != nullptr) [[likely]] {
-            std::construct_at(&self->inner);
+        ObjectRef<T> self{tp_alloc(tp, 0)};
+        if (self) [[likely]] {
+            std::construct_at(reinterpret_cast<T *>(self.storage->body), std::forward<Args>(args)...);
         }
 
         return self;
@@ -102,7 +128,7 @@ namespace boros::python {
     /// default-constructing the C++ payload.
     template <typename T>
     PyObject *DefaultNew(PyTypeObject *tp, PyObject *Py_UNUSED(args), PyObject *Py_UNUSED(kwds)) {
-        return *Alloc<T>(tp);
+        return Alloc<T>(tp);
     }
 
     /// Implements the tp_dealloc slot by calling the C++ destructor
@@ -129,7 +155,8 @@ namespace boros::python {
         }
 
         // Now call the C++ destructor for business logic cleanup.
-        std::destroy_at(&reinterpret_cast<Object<T> *>(self)->inner);
+        ObjectRef<T> ref{self};
+        std::destroy_at(ref.Get());
 
         // Deallocate the object memory.
 #ifdef Py_LIMITED_API
@@ -142,8 +169,32 @@ namespace boros::python {
 
         // Heap types get a reference to the type at allocation,
         // so we must remove it here.
-        if (PyType_HasFeature(tp, Py_TPFLAGS_HEAPTYPE)) {
-            Py_DECREF(tp);
+        Py_DECREF(tp);
+    }
+
+    /// Provides an implementation of a tp_traverse slot that forwards
+    /// to a custom Traverse member function on the type.
+    template <typename T>
+    int DefaultTraverse(PyObject *ob, visitproc visit, void *arg) {
+        Py_VISIT(Py_TYPE(ob));
+
+        ObjectRef<T> self{ob};
+        if constexpr (requires { self->Traverse(visit, arg); }) {
+            return self->Traverse(visit, arg);
+        } else {
+            return 0;
+        }
+    }
+
+    /// Provides an implementation of a tp_clear slot that forwards
+    /// to a custom Clear member function on the type.
+    template <typename T>
+    int DefaultClear(PyObject *ob) {
+        ObjectRef<T> self{ob};
+        if constexpr (requires { self->Clear(); }) {
+            return self->Clear();
+        } else {
+            return 0;
         }
     }
 
@@ -165,7 +216,7 @@ namespace boros::python {
     /// Creates a type specification from the given metadata.
     template <typename T>
     constexpr PyType_Spec TypeSpec(const char *name, PyType_Slot *slots, unsigned int flags = Py_TPFLAGS_DEFAULT) {
-        return {name, sizeof(Object<T>), 0, flags, slots};
+        return {name, sizeof(impl::SizedObjectStorageForAlloc<T>), 0, flags, slots};
     }
 
 }  // namespace boros::python

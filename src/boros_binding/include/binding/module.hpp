@@ -51,13 +51,13 @@ namespace boros::python {
     }
 
     /// Instantiates a new type from spec and adds it to a module.
-    inline PyTypeObject *AddTypeToModule(PyObject *mod, PyType_Spec &spec) {
-        auto *tp = reinterpret_cast<PyTypeObject *>(PyType_FromModuleAndSpec(mod, &spec, nullptr));
+    inline PyTypeObject *InstantiateType(PyObject *mod, PyType_Spec &spec, PyObject *base = nullptr, bool bind = true) {
+        auto *tp = reinterpret_cast<PyTypeObject *>(PyType_FromModuleAndSpec(mod, &spec, base));
         if (tp == nullptr) {
             return nullptr;
         }
 
-        if (PyModule_AddType(mod, tp) < 0) {
+        if (bind && PyModule_AddType(mod, tp) < 0) {
             return nullptr;
         }
 

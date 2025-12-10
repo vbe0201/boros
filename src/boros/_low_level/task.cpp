@@ -6,7 +6,6 @@
 #include <cassert>
 #include <cstddef>
 
-#include "binding/property.hpp"
 #include "extension.hpp"
 
 namespace boros {
@@ -111,13 +110,13 @@ namespace boros {
         }
     }
 
-    auto Task::Create(python::Module mod, PyObject *name, PyObject *coro) -> python::Object<Task> * {
+    auto Task::Create(python::Module mod, PyObject *name, PyObject *coro) -> python::ObjectRef<Task> {
         auto &state = python::GetModuleState<ModuleState>(mod.raw);
 
-        auto *task = python::Alloc<Task>(state.TaskType);
-        if (task != nullptr) [[likely]] {
-            task->inner.name = name;
-            task->inner.coro = coro;
+        auto task = python::Alloc<Task>(state.TaskType);
+        if (task) [[likely]] {
+            task->name = name;
+            task->coro = coro;
         }
 
         return task;
@@ -135,23 +134,13 @@ namespace boros {
 
     namespace {
 
-        constexpr const char *TaskDoc = "A lightweight, concurrent thread of execution.\n\n"
-                                        "Tasks are similar to OS threads, but they are managed by the boros scheduler\n"
-                                        "instead of the OS scheduler. This makes them cheap to create and there is\n"
-                                        "little overhead to switching between tasks.\n\n"
-                                        "Task has no public constructor and appears immutable to Python code.\n"
-                                        "Its public members are mostly useful for introspection and debugging.";
-
-        auto TraverseTask(PyObject *ob, visitproc visit, void *arg) -> int {
-            auto &task = reinterpret_cast<python::Object<Task> *>(ob)->Get();
-            Py_VISIT(Py_TYPE(ob));
-            return task.Traverse(visit, arg);
-        }
-
-        auto ClearTask(PyObject *ob) -> int {
-            auto &task = reinterpret_cast<python::Object<Task> *>(ob)->Get();
-            return task.Clear();
-        }
+        constexpr const char *g_task_doc =
+            "A lightweight, concurrent thread of execution.\n\n"
+            "Tasks are similar to OS threads, but they are managed by the boros scheduler\n"
+            "instead of the OS scheduler. This makes them cheap to create and there is\n"
+            "little overhead to switching between tasks.\n\n"
+            "Task has no public constructor and appears immutable to Python code.\n"
+            "Its public members are mostly useful for introspection and debugging.";
 
         auto g_task_properties = python::PropertyTable(
             python::ReadOnlyProperty<&Task::GetName>("name", "A string representation of the task name."),
@@ -160,10 +149,10 @@ namespace boros {
         // TODO: repr
         // TODO: await frames stackwalking
         // TODO: contextvars
-        auto g_task_slots = python::TypeSlotTable(python::TypeSlot(Py_tp_doc, const_cast<char *>(TaskDoc)),
+        auto g_task_slots = python::TypeSlotTable(python::TypeSlot(Py_tp_doc, const_cast<char *>(g_task_doc)),
                                                   python::TypeSlot(Py_tp_dealloc, &python::DefaultDealloc<Task>),
-                                                  python::TypeSlot(Py_tp_traverse, &TraverseTask),
-                                                  python::TypeSlot(Py_tp_clear, &ClearTask),
+                                                  python::TypeSlot(Py_tp_traverse, &python::DefaultTraverse<Task>),
+                                                  python::TypeSlot(Py_tp_clear, &python::DefaultClear<Task>),
                                                   python::TypeSlot(Py_tp_getset, g_task_properties.data()));
 
         constinit auto g_task_spec = python::TypeSpec<Task>(
@@ -185,7 +174,7 @@ namespace boros {
     }
 
     auto Task::Register(PyObject *mod) -> PyTypeObject * {
-        return python::AddTypeToModule(mod, g_task_spec);
+        return python::InstantiateType(mod, g_task_spec);
     }
 
 }  // namespace boros

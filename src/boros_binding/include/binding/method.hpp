@@ -199,8 +199,8 @@ namespace boros::python {
 
             static decltype(auto) CallMemberFunctionImpl(PyObject *self, auto &&args) {
                 auto Wrapper = [self](auto &&...unpacked_args) -> decltype(auto) {
-                    auto *obj = reinterpret_cast<Object<Cls> *>(self);
-                    return (obj->inner.*Fn)(std::forward<decltype(unpacked_args)>(unpacked_args)...);
+                    ObjectRef<Cls> obj{self};
+                    return ((*obj).*Fn)(std::forward<decltype(unpacked_args)>(unpacked_args)...);
                 };
 
                 return std::apply(Wrapper, std::forward<decltype(args)>(args));

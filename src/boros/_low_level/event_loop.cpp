@@ -18,25 +18,26 @@ namespace boros {
             PyErr_SetFromErrno(PyExc_OSError);
         }
 
-    }
+    }  // namespace
 
-    auto EventLoop::Create(python::Module mod, PyObject *policy_) -> PyObject* {
+    auto EventLoop::Create(python::Module mod, PyObject *policy_) -> PyObject * {
         auto &state    = python::GetModuleState<ModuleState>(mod.raw);
         auto *loop_key = state.local_event_loop;
 
-        auto *policy = python::CastExact<EventLoopPolicy>(policy_, state.EventLoopPolicyType);
-        if (policy == nullptr) [[unlikely]] {
+        auto policy = python::CastExact<EventLoopPolicy>(policy_, state.EventLoopPolicyType);
+        if (!policy) [[unlikely]] {
             return nullptr;
         }
 
         assert(PyThread_tss_is_created(loop_key));
 
-        auto *loop = reinterpret_cast<python::Object<EventLoop>*>(PyThread_tss_get(loop_key));
+        python::ObjectRef<EventLoop> loop{static_cast<PyObject*>(PyThread_tss_get(loop_key))};
         if (loop == nullptr) [[likely]] {
             loop = python::Alloc<EventLoop>(state.EventLoopType);
-            if (loop == nullptr) [[unlikely]] {}
-            auto &ring = loop->Get().m_ring;
-            auto &conf = policy->Get();
+            if (loop == nullptr) [[unlikely]] {
+            }
+            auto &ring = loop->m_ring;
+            auto &conf = *policy;
 
             if (int res = ring.Initialize(conf.sq_entries, conf.cq_entries); res < 0) [[unlikely]] {
                 Py_DECREF(loop);
@@ -53,8 +54,8 @@ namespace boros {
             PyThread_tss_set(state.local_event_loop, loop);
         }
 
-        Py_INCREF(*loop);
-        return *loop;
+        Py_INCREF(loop);
+        return loop;
     }
 
     auto EventLoop::Destroy(python::Module mod) -> void {
@@ -63,23 +64,22 @@ namespace boros {
 
         assert(PyThread_tss_is_created(loop_key));
 
-        auto *loop = reinterpret_cast<PyObject*>(PyThread_tss_get(loop_key));
+        auto *loop = reinterpret_cast<PyObject *>(PyThread_tss_get(loop_key));
         if (loop != nullptr) {
             Py_DECREF(loop);
             PyThread_tss_set(state.local_event_loop, nullptr);
         }
     }
 
-    auto EventLoop::Get(python::Module mod) -> PyObject* {
+    auto EventLoop::Get(python::Module mod) -> PyObject * {
         auto &state    = python::GetModuleState<ModuleState>(mod.raw);
         auto *loop_key = state.local_event_loop;
 
         assert(PyThread_tss_is_created(loop_key));
 
-        auto *loop = reinterpret_cast<PyObject*>(PyThread_tss_get(loop_key));
+        auto *loop = reinterpret_cast<PyObject *>(PyThread_tss_get(loop_key));
         if (loop == nullptr) [[unlikely]] {
-            PyErr_SetString(PyExc_RuntimeError,
-                "no running event loop on the current thread");
+            PyErr_SetString(PyExc_RuntimeError, "no running event loop on the current thread");
             return nullptr;
         }
 
@@ -100,12 +100,12 @@ namespace boros {
     }
 
     auto EventLoop::Nop(python::Module mod, int res) -> void {
-        auto *loop = reinterpret_cast<python::Object<EventLoop>*>(EventLoop::Get(mod));
+        python::ObjectRef<EventLoop> loop{EventLoop::Get(mod)};
         if (loop == nullptr) [[unlikely]] {
             return;
         }
 
-        auto &sq = loop->Get().m_ring.GetSubmissionQueue();
+        auto &sq = loop->m_ring.GetSubmissionQueue();
         if (sq.HasCapacityFor(1)) {
             auto entry = sq.Push();
             entry.Prepare(IORING_OP_NOP, -1, nullptr, res, 0);
@@ -120,44 +120,33 @@ namespace boros {
         auto g_event_loop_policy_properties = python::PropertyTable(
             python::Property<&EventLoopPolicy::GetSqEntries, &EventLoopPolicy::SetSqEntries>("sq_entries"),
             python::Property<&EventLoopPolicy::GetCqEntries, &EventLoopPolicy::SetCqEntries>("cq_entries"),
-            python::Property<&EventLoopPolicy::GetWqFd, &EventLoopPolicy::SetWqFd>("wqfd")
-        );
+            python::Property<&EventLoopPolicy::GetWqFd, &EventLoopPolicy::SetWqFd>("wqfd"));
 
-        auto g_event_loop_policy_slots = python::TypeSlotTable(
-            python::TypeSlot(Py_tp_new, python::DefaultNew<EventLoopPolicy>),
-            python::TypeSlot(Py_tp_dealloc, python::DefaultDealloc<EventLoopPolicy>),
-            python::TypeSlot(Py_tp_getset, g_event_loop_policy_properties.data())
-        );
+        auto g_event_loop_policy_slots =
+            python::TypeSlotTable(python::TypeSlot(Py_tp_new, python::DefaultNew<EventLoopPolicy>),
+                                  python::TypeSlot(Py_tp_dealloc, python::DefaultDealloc<EventLoopPolicy>),
+                                  python::TypeSlot(Py_tp_getset, g_event_loop_policy_properties.data()));
 
         constinit auto g_event_loop_policy_spec = python::TypeSpec<EventLoopPolicy>(
-            "_low_level.EventLoopPolicy",
-            g_event_loop_policy_slots.data(),
-            Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE
-        );
+            "_low_level.EventLoopPolicy", g_event_loop_policy_slots.data(), Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE);
 
-        auto g_event_loop_methods = python::MethodTable(
-            python::Method<&EventLoop::Tick>("tick")
-        );
+        auto g_event_loop_methods = python::MethodTable(python::Method<&EventLoop::Tick>("tick"));
 
-        auto g_event_loop_slots = python::TypeSlotTable(
-            python::TypeSlot(Py_tp_dealloc, python::DefaultDealloc<EventLoop>),
-            python::TypeSlot(Py_tp_methods, g_event_loop_methods.data())
-        );
+        auto g_event_loop_slots =
+            python::TypeSlotTable(python::TypeSlot(Py_tp_dealloc, python::DefaultDealloc<EventLoop>),
+                                  python::TypeSlot(Py_tp_methods, g_event_loop_methods.data()));
 
         constinit auto g_event_loop_spec = python::TypeSpec<EventLoop>(
-            "_low_level.EventLoop",
-            g_event_loop_slots.data(),
-            Py_TPFLAGS_DEFAULT | Py_TPFLAGS_DISALLOW_INSTANTIATION
-        );
+            "_low_level.EventLoop", g_event_loop_slots.data(), Py_TPFLAGS_DEFAULT | Py_TPFLAGS_DISALLOW_INSTANTIATION);
 
+    }  // namespace
+
+    auto EventLoopPolicy::Register(PyObject *mod) -> PyTypeObject * {
+        return python::InstantiateType(mod, g_event_loop_policy_spec);
     }
 
-    auto EventLoopPolicy::Register(PyObject *mod) -> PyTypeObject* {
-        return python::AddTypeToModule(mod, g_event_loop_policy_spec);
+    auto EventLoop::Register(PyObject *mod) -> PyTypeObject * {
+        return python::InstantiateType(mod, g_event_loop_spec);
     }
 
-    auto EventLoop::Register(PyObject *mod) -> PyTypeObject* {
-        return python::AddTypeToModule(mod, g_event_loop_spec);
-    }
-
-}
+}  // namespace boros

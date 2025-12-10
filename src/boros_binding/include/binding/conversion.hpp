@@ -36,7 +36,7 @@ namespace boros::python {
     }
 
     template <typename T>
-    inline PyObject *ToPython(Object<T> *value) {
+    inline PyObject *ToPython(ObjectRef<T>*value) {
         return *value;
     }
 
