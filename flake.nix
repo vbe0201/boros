@@ -42,6 +42,8 @@
         devShells.default = pkgs.mkShell {
           packages = with pkgs; [
             clang-tools
+            cmake
+            liburing
             meson
             ninja
             pkg-config
