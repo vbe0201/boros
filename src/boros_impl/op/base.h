@@ -8,6 +8,8 @@
 
 #include <linux/io_uring.h>
 
+#include "util/outcome.h"
+
 /* The Operation state machine lifecycle. */
 typedef enum {
     State_Pending,
@@ -18,7 +20,7 @@ typedef enum {
 /* Virtual functions that must be provided by Operation subclasses. */
 typedef struct {
     void (*prepare)(PyObject *, struct io_uring_sqe *);
-    void (*result)(PyObject *, struct io_uring_cqe *);
+    void (*complete)(PyObject *, struct io_uring_cqe *);
 } OperationVTable;
 
 /* Represents the base state of I/O operations in the runtime. */
@@ -27,11 +29,8 @@ typedef struct {
     OperationVTable *vtable;
     PyObject *awaiter;
     OperationState state;
-    unsigned success : 1;
-    union {
-        int error;
-        PyObject *result;
-    };
+    int scratch;
+    Outcome outcome;
 } Operation;
 
 /* State machine for awaiting the completion of an Operation. */

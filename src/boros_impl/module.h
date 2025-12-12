@@ -11,6 +11,7 @@ typedef struct {
     PyTypeObject *Task_type;
     PyTypeObject *Operation_type;
     PyTypeObject *OperationWaiter_type;
+    PyTypeObject *NopOperation_type;
 
     /* The thread-local runtime context. */
     Py_tss_t *local_context;

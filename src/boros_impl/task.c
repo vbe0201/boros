@@ -7,7 +7,7 @@
 #include <stddef.h>
 
 #include "module.h"
-#include "util.h"
+#include "util/python.h"
 
 static inline void task_link_init(TaskLink *self) {
     self->prev = self;
@@ -93,7 +93,7 @@ void task_list_clear(TaskList *self) {
 Task *task_alloc(PyObject *mod, PyObject *name, PyObject *coro) {
     ImplState *state = PyModule_GetState(mod);
 
-    Task *task = (Task *)boros_py_alloc(state->Task_type);
+    Task *task = (Task *)python_alloc(state->Task_type);
     if (task != NULL) {
         task_link_init(&task->link);
         task->name = name;
@@ -152,7 +152,7 @@ static PyGetSetDef g_task_properties[] = {
 // TODO: repr, await frames stackwalking, contextvars
 static PyType_Slot g_task_slots[] = {
     {Py_tp_doc, (void *)g_task_doc},
-    {Py_tp_dealloc, boros_tp_dealloc},
+    {Py_tp_dealloc, python_tp_dealloc},
     {Py_tp_traverse, task_traverse},
     {Py_tp_clear, task_clear},
     {Py_tp_getset, g_task_properties},

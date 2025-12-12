@@ -3,19 +3,17 @@
 
 #include "op/base.h"
 
-#include <errno.h>
-
 #include "module.h"
-#include "util.h"
+#include "util/python.h"
 
 /* Operation implementation */
 
 Operation *operation_alloc(PyTypeObject *tp) {
-    Operation *op = (Operation *)boros_py_alloc(tp);
+    Operation *op = (Operation *)python_alloc(tp);
     if (op != NULL) {
         op->state   = State_Pending;
         op->awaiter = NULL;
-        op->result  = NULL;
+        outcome_init(&op->outcome);
     }
 
     return op;
@@ -23,13 +21,18 @@ Operation *operation_alloc(PyTypeObject *tp) {
 
 int operation_traverse(Operation *self, visitproc visit, void *arg) {
     Py_VISIT(self->awaiter);
-    Py_VISIT(self->result);
+
+    int res = outcome_traverse(&self->outcome, visit, arg);
+    if (res != 0) {
+        return res;
+    }
+
     return 0;
 }
 
 int operation_clear(Operation *self) {
     Py_CLEAR(self->awaiter);
-    Py_CLEAR(self->result);
+    outcome_clear(&self->outcome);
     return 0;
 }
 
@@ -46,7 +49,7 @@ static PyObject *operation_await(PyObject *self) {
     /* FIXME: This causes memory corruption without PyType_GetModuleByDef. */
     ImplState *state = PyModule_GetState(PyType_GetModule(Py_TYPE(self)));
 
-    OperationWaiter *waiter = (OperationWaiter *)boros_py_alloc(state->OperationWaiter_type);
+    OperationWaiter *waiter = (OperationWaiter *)python_alloc(state->OperationWaiter_type);
     if (waiter != NULL) {
         waiter->op = Py_NewRef(self);
     }
@@ -56,7 +59,7 @@ static PyObject *operation_await(PyObject *self) {
 
 // clang-format off
 static PyType_Slot g_operation_slots[] = {
-    {Py_tp_dealloc, boros_tp_dealloc},
+    {Py_tp_dealloc, python_tp_dealloc},
     {Py_tp_traverse, operation_traverse_impl},
     {Py_tp_clear, operation_clear_impl},
     {Py_am_await, operation_await},
@@ -117,23 +120,24 @@ static PyObject *operation_waiter_iternext(PyObject *self) {
          * Task is woken again. This state transition is done
          * by the event loop.
          *
-         * Here we have either a result or an error, so either
-         * we raise the conventional StopIteration exception
-         * to indicate success, or we raise an OSError.
+         * Here we have unwrap our Outcome object which stores
+         * either a return value or an exception.
          */
-        if (op->success) {
-            PyObject *args[2] = {NULL, op->result};
+        PyObject *res = outcome_unwrap(&op->outcome);
+        if (res != NULL) {
+            PyObject *args[2] = {NULL, res};
             size_t nargsf     = 1 | PY_VECTORCALL_ARGUMENTS_OFFSET;
 
             PyObject *exc = PyObject_Vectorcall(PyExc_StopIteration, args + 1, nargsf, NULL);
             if (exc != NULL) {
                 PyErr_SetRaisedException(exc);
             }
-        } else {
-            errno = op->error;
-            PyErr_SetFromErrno(PyExc_OSError);
         }
 
+        return NULL;
+
+    default:
+        PyErr_SetString(PyExc_RuntimeError, "Corrupt operation state");
         return NULL;
     }
 }
@@ -153,7 +157,7 @@ static int operation_waiter_clear(PyObject *self) {
 
 // clang-format off
 static PyType_Slot g_operation_waiter_slots[] = {
-    {Py_tp_dealloc, boros_tp_dealloc},
+    {Py_tp_dealloc, python_tp_dealloc},
     {Py_tp_traverse, operation_waiter_traverse},
     {Py_tp_clear, operation_waiter_clear},
     {Py_tp_iter, PyObject_SelfIter},

@@ -1,9 +1,12 @@
 boros_impl_sources = [
     'module.c',
     'task.c',
-    'util.c',
 
     'op/base.c',
+    'op/nop.c',
+
+    'util/outcome.c',
+    'util/python.c',
 ]
 
 py.extension_module(

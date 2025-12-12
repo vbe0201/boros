@@ -6,6 +6,7 @@
 #include <assert.h>
 
 #include "op/base.h"
+#include "op/nop.h"
 #include "task.h"
 
 static int module_traverse(PyObject *mod, visitproc visit, void *arg) {
@@ -13,6 +14,7 @@ static int module_traverse(PyObject *mod, visitproc visit, void *arg) {
     Py_VISIT(state->Task_type);
     Py_VISIT(state->Operation_type);
     Py_VISIT(state->OperationWaiter_type);
+    Py_VISIT(state->NopOperation_type);
     return 0;
 }
 
@@ -21,6 +23,7 @@ static int module_clear(PyObject *mod) {
     Py_CLEAR(state->Task_type);
     Py_CLEAR(state->Operation_type);
     Py_CLEAR(state->OperationWaiter_type);
+    Py_CLEAR(state->NopOperation_type);
     return 0;
 }
 
@@ -50,6 +53,11 @@ static int module_exec(PyObject *mod) {
         return -1;
     }
 
+    state->NopOperation_type = nop_operation_register(mod);
+    if (state->NopOperation_type == NULL) {
+        return -1;
+    }
+
     state->local_context = PyThread_tss_alloc();
     if (state->local_context == NULL) {
         return -1;
@@ -63,6 +71,7 @@ static int module_exec(PyObject *mod) {
 }
 
 static PyMethodDef g_module_methods[] = {
+    {"nop", (PyCFunction)nop_operation_create, METH_O, PyDoc_STR("Performs a nop operation")},
     {NULL, NULL, 0, NULL},
 };
 
