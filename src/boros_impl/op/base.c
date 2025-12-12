@@ -3,8 +3,12 @@
 
 #include "op/base.h"
 
+#include <errno.h>
+
 #include "module.h"
 #include "util.h"
+
+/* Operation implementation */
 
 Operation *operation_alloc(PyTypeObject *tp) {
     Operation *op = (Operation *)boros_py_alloc(tp);
@@ -113,12 +117,23 @@ static PyObject *operation_waiter_iternext(PyObject *self) {
          * Task is woken again. This state transition is done
          * by the event loop.
          *
-         * Here we signal the end of iteration by raising the
-         * conventional StopIteration exception with a result
-         * value that was produced by the Operation.
+         * Here we have either a result or an error, so either
+         * we raise the conventional StopIteration exception
+         * to indicate success, or we raise an OSError.
          */
-        assert(op->result != NULL);
-        PyErr_SetObject(PyExc_StopIteration, op->result);
+        if (op->success) {
+            PyObject *args[2] = {NULL, op->result};
+            size_t nargsf     = 1 | PY_VECTORCALL_ARGUMENTS_OFFSET;
+
+            PyObject *exc = PyObject_Vectorcall(PyExc_StopIteration, args + 1, nargsf, NULL);
+            if (exc != NULL) {
+                PyErr_SetRaisedException(exc);
+            }
+        } else {
+            errno = op->error;
+            PyErr_SetFromErrno(PyExc_OSError);
+        }
+
         return NULL;
     }
 }

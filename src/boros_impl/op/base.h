@@ -6,6 +6,8 @@
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
 
+#include <linux/io_uring.h>
+
 /* The Operation state machine lifecycle. */
 typedef enum {
     State_Pending,
@@ -13,12 +15,23 @@ typedef enum {
     State_Ready,
 } OperationState;
 
+/* Virtual functions that must be provided by Operation subclasses. */
+typedef struct {
+    void (*prepare)(PyObject *, struct io_uring_sqe *);
+    void (*result)(PyObject *, struct io_uring_cqe *);
+} OperationVTable;
+
 /* Represents the base state of I/O operations in the runtime. */
 typedef struct {
     PyObject_HEAD
-    OperationState state;
+    OperationVTable *vtable;
     PyObject *awaiter;
-    PyObject *result;
+    OperationState state;
+    unsigned success : 1;
+    union {
+        int error;
+        PyObject *result;
+    };
 } Operation;
 
 /* State machine for awaiting the completion of an Operation. */
