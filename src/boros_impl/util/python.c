@@ -4,6 +4,7 @@
 #include "util/python.h"
 
 #include <limits.h>
+#include <stdio.h>
 
 PyObject *python_alloc(PyTypeObject *tp) {
 #ifdef Py_LIMITED_API
@@ -17,6 +18,7 @@ PyObject *python_alloc(PyTypeObject *tp) {
 }
 
 void python_tp_dealloc(PyObject *self) {
+    fprintf(stderr, "deallocating obj at %p\n", self);
     PyTypeObject *tp = Py_TYPE(self);
 
     PyObject_GC_UnTrack(self);
@@ -46,9 +48,24 @@ void python_tp_dealloc(PyObject *self) {
 
 bool python_parse_int(int *out, PyObject *ob) {
     int overflow;
-    long long tmp = PyLong_AsLongLongAndOverflow(ob, &overflow);
+    long tmp = PyLong_AsLongAndOverflow(ob, &overflow);
 
     if (overflow != 0 || tmp < INT_MIN || tmp > INT_MAX) {
+        PyErr_SetString(PyExc_OverflowError, "Python int too large to convert to C int");
+        return false;
+    }
+
+    *out = tmp;
+    return true;
+}
+
+bool python_parse_unsigned_int(unsigned int *out, PyObject *ob) {
+    unsigned long tmp = PyLong_AsUnsignedLong(ob);
+    if (PyErr_Occurred()) {
+        return false;
+    }
+
+    if (tmp > UINT_MAX) {
         PyErr_SetString(PyExc_OverflowError, "Python int too large to convert to C int");
         return false;
     }

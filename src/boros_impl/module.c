@@ -5,12 +5,15 @@
 
 #include <assert.h>
 
+#include "context/run_config.h"
 #include "op/base.h"
 #include "op/nop.h"
+#include "run.h"
 #include "task.h"
 
 static int module_traverse(PyObject *mod, visitproc visit, void *arg) {
     ImplState *state = PyModule_GetState(mod);
+    Py_VISIT(state->RunConfig_type);
     Py_VISIT(state->Task_type);
     Py_VISIT(state->Operation_type);
     Py_VISIT(state->OperationWaiter_type);
@@ -20,6 +23,7 @@ static int module_traverse(PyObject *mod, visitproc visit, void *arg) {
 
 static int module_clear(PyObject *mod) {
     ImplState *state = PyModule_GetState(mod);
+    Py_CLEAR(state->RunConfig_type);
     Py_CLEAR(state->Task_type);
     Py_CLEAR(state->Operation_type);
     Py_CLEAR(state->OperationWaiter_type);
@@ -37,6 +41,11 @@ static void module_free(void *mod) {
 
 static int module_exec(PyObject *mod) {
     ImplState *state = PyModule_GetState(mod);
+
+    state->RunConfig_type = run_config_register(mod);
+    if (state->RunConfig_type == NULL) {
+        return -1;
+    }
 
     state->Task_type = task_register(mod);
     if (state->Task_type == NULL) {
@@ -72,6 +81,7 @@ static int module_exec(PyObject *mod) {
 
 static PyMethodDef g_module_methods[] = {
     {"nop", (PyCFunction)nop_operation_create, METH_O, PyDoc_STR("Performs a nop operation")},
+    {"run", (PyCFunction)boros_run, METH_FASTCALL, PyDoc_STR("Coroutine runner")},
     {NULL, NULL, 0, NULL},
 };
 

@@ -8,6 +8,7 @@
 
 typedef struct {
     /* Python type objects that belong to this module. */
+    PyTypeObject *RunConfig_type;
     PyTypeObject *Task_type;
     PyTypeObject *Operation_type;
     PyTypeObject *OperationWaiter_type;

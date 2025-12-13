@@ -44,6 +44,14 @@ void outcome_store_error(Outcome *outcome, PyObject *err) {
     outcome->value = err;
 }
 
+void outcome_capture(Outcome *outcome, PyObject *ob) {
+    if (ob != NULL) {
+        outcome_store_result(outcome, ob);
+    } else {
+        outcome_capture_error(outcome);
+    }
+}
+
 void outcome_capture_error(Outcome *outcome) {
     outcome_store_error(outcome, PyErr_GetRaisedException());
 }

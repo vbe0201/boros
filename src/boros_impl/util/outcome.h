@@ -25,6 +25,9 @@ void outcome_clear(Outcome *outcome);
 void outcome_store_result(Outcome *outcome, PyObject *ob);
 void outcome_store_error(Outcome *outcome, PyObject *ob);
 
+/* Captures either the provided value or an error into the outcome. */
+void outcome_capture(Outcome *outcome, PyObject *ob);
+
 /* Captures the currently raised exception into the outcome. */
 void outcome_capture_error(Outcome *outcome);
 

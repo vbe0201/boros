@@ -8,6 +8,7 @@
 
 #include <linux/io_uring.h>
 
+#include "task.h"
 #include "util/outcome.h"
 
 /* The Operation state machine lifecycle. */
@@ -27,7 +28,7 @@ typedef struct {
 typedef struct {
     PyObject_HEAD
     OperationVTable *vtable;
-    PyObject *awaiter;
+    Task *awaiter;
     OperationState state;
     int scratch;
     Outcome outcome;

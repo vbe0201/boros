@@ -18,13 +18,7 @@ static void nop_prepare(PyObject *self, struct io_uring_sqe *sqe) {
 
 static void nop_complete(PyObject *self, struct io_uring_cqe *cqe) {
     Operation *op = (Operation *)self;
-
-    PyObject *res = PyLong_FromLong(cqe->res);
-    if (res != NULL) {
-        outcome_store_result(&op->outcome, res);
-    } else {
-        outcome_capture_error(&op->outcome);
-    }
+    outcome_capture(&op->outcome, PyLong_FromLong(cqe->res));
 }
 
 static OperationVTable g_nop_operation_vtable = {

@@ -16,3 +16,6 @@ void python_tp_dealloc(PyObject *self);
 
 /* Attempts to parse a given PyObject into a C int value. */
 bool python_parse_int(int *out, PyObject *ob);
+
+/* Attempts to parse a given PyObject into a C unsigned int value. */
+bool python_parse_unsigned_int(unsigned int *out, PyObject *ob);
