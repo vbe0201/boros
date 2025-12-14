@@ -68,7 +68,7 @@ static PyType_Slot g_operation_slots[] = {
 // clang-format on
 
 static PyType_Spec g_operation_spec = {
-    .name      = "_impl.Operation",
+    .name      = "_impl._Operation",
     .basicsize = sizeof(Operation),
     .itemsize  = 0,
     .flags     = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_IMMUTABLETYPE | Py_TPFLAGS_BASETYPE,
@@ -167,7 +167,7 @@ static PyType_Slot g_operation_waiter_slots[] = {
 // clang-format on
 
 static PyType_Spec g_operation_waiter_spec = {
-    .name      = "_impl.OperationWaiter",
+    .name      = "_impl._OperationWaiter",
     .basicsize = sizeof(OperationWaiter),
     .itemsize  = 0,
     .flags     = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_IMMUTABLETYPE,

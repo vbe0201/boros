@@ -48,7 +48,7 @@ static PyType_Slot g_nop_operation_slots[] = {
 };
 
 static PyType_Spec g_nop_operation_spec = {
-    .name      = "_impl.NopOperation",
+    .name      = "_impl._NopOperation",
     .basicsize = sizeof(NopOperation),
     .itemsize  = 0,
     .flags     = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_IMMUTABLETYPE,
