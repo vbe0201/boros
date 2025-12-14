@@ -36,6 +36,10 @@
             pkg-config
           ];
 
+          buildInputs = with pkgs; [
+            liburing
+          ];
+
           pythonImportsCheck = [boros_toml.project.name];
         };
 

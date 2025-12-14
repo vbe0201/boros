@@ -54,7 +54,7 @@ void task_list_clear(TaskList *self);
 /* Task API */
 
 /* Allocates a Task instance. The object can be exposed to Python. */
-Task *task_alloc(PyObject *mod, PyObject *name, PyObject *coro);
+Task *task_create(PyObject *mod, PyObject *name, PyObject *coro);
 
 /* Registers Task as a Python class onto the module. */
 PyTypeObject *task_register(PyObject *mod);

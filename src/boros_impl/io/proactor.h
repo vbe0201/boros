@@ -28,6 +28,7 @@ int proactor_ready(Proactor *proactor);
 /* Gets a submission queue entry from the proactor. */
 struct io_uring_sqe *proactor_get_submission(Proactor *proactor);
 
+/* Passes submissions to the kernel without waiting. */
 int proactor_submit(Proactor *proactor);
 
 /* Passes submissions to the kernel and waits for completions. */

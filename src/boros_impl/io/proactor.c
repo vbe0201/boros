@@ -116,11 +116,15 @@ void proactor_reap_completions(Proactor *proactor, TaskList *queue) {
         assert(op != NULL);
 
         /* Run the completion hook to store the result. */
-        op->state = State_Ready;
         (op->vtable->complete)((PyObject *)op, cqe);
+        op->state = State_Ready;
 
         /* Append the waiting Task to the back of the run queue. */
         task_list_push_back(queue, op->awaiter);
+
+        // TODO: At this point technically any Python code can run.
+        // Are we in a sane state so nothing breaks?
+        Py_DECREF(op);
     }
 
     io_uring_cq_advance(&proactor->ring, count);

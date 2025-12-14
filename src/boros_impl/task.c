@@ -90,7 +90,7 @@ void task_list_clear(TaskList *self) {
     }
 }
 
-Task *task_alloc(PyObject *mod, PyObject *name, PyObject *coro) {
+Task *task_create(PyObject *mod, PyObject *name, PyObject *coro) {
     ImplState *state = PyModule_GetState(mod);
 
     Task *task = (Task *)python_alloc(state->Task_type);

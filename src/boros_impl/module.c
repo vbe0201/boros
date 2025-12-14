@@ -79,11 +79,14 @@ static int module_exec(PyObject *mod) {
     return 0;
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wcast-function-type"
 static PyMethodDef g_module_methods[] = {
     {"nop", (PyCFunction)nop_operation_create, METH_O, PyDoc_STR("Performs a nop operation")},
     {"run", (PyCFunction)boros_run, METH_FASTCALL, PyDoc_STR("Coroutine runner")},
     {NULL, NULL, 0, NULL},
 };
+#pragma GCC diagnostic pop
 
 static PyModuleDef_Slot g_module_slots[] = {
     {Py_mod_exec, module_exec},

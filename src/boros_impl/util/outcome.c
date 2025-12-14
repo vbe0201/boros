@@ -11,7 +11,7 @@ static inline PyObject *tag_pointer(PyObject *ob) {
 }
 
 static inline PyObject *untag_pointer(PyObject *ob) {
-    return (PyObject *)((uintptr_t)ob & ~1U);
+    return (PyObject *)((uintptr_t)ob & ~1ULL);
 }
 
 static inline bool is_pointer_tagged(PyObject *ob) {
@@ -27,7 +27,9 @@ bool outcome_empty(Outcome *outcome) {
 }
 
 int outcome_traverse(Outcome *outcome, visitproc visit, void *arg) {
-    Py_VISIT(untag_pointer(outcome->value));
+    PyObject *ob = untag_pointer(outcome->value);
+    Py_VISIT(ob);
+    return 0;
 }
 
 void outcome_clear(Outcome *outcome) {

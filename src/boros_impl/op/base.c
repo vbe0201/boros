@@ -3,8 +3,6 @@
 
 #include "op/base.h"
 
-#include <stdio.h>
-
 #include "module.h"
 #include "util/python.h"
 
@@ -86,7 +84,6 @@ PyTypeObject *operation_register(PyObject *mod) {
 static PyObject *operation_waiter_iternext(PyObject *self) {
     OperationWaiter *waiter = (OperationWaiter *)self;
     Operation *op           = (Operation *)waiter->op;
-    fprintf(stderr, "waiter: %p, waiter op: %p\n", waiter, op);
 
     switch (op->state) {
     case State_Pending:

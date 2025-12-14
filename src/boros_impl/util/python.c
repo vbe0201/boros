@@ -4,7 +4,6 @@
 #include "util/python.h"
 
 #include <limits.h>
-#include <stdio.h>
 
 PyObject *python_alloc(PyTypeObject *tp) {
 #ifdef Py_LIMITED_API
@@ -18,7 +17,6 @@ PyObject *python_alloc(PyTypeObject *tp) {
 }
 
 void python_tp_dealloc(PyObject *self) {
-    fprintf(stderr, "deallocating obj at %p\n", self);
     PyTypeObject *tp = Py_TYPE(self);
 
     PyObject_GC_UnTrack(self);
