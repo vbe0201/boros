@@ -21,6 +21,10 @@ docs/_build/
 .idea/
 .vscode/
 
+# Meson subprojects
+/subprojects/*
+!/subprojects/*.wrap
+
 # Nix
 .direnv/
 result
