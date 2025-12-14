@@ -6,9 +6,9 @@ Architecture
 This chapter explores the architecture of the project and sheds some
 light on its internal composition.
 
-The foundational building block for the library is the ``boros._low_level``
+The foundational building block for the library is the ``boros._impl``
 module. It provides a self-contained implementation of the core scheduling
-logic and the I/O framework in C++. The module itself is not part of the
+logic and the I/O framework in C. The module itself is not part of the
 public API, but parts of it may be re-exported by the ``boros`` module.
 No stability guarantees are made about this API.
 

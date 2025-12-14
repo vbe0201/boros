@@ -14,9 +14,10 @@ you may skip this unless you're curious.
 
 .. warning::
 
-   None of the implementation details are set in stone. boros explores
-   a relatively novel design space with its focus on io_uring, and if
-   superior approaches are discovered they will be incorporated.
+   The following chapters document implementation details which are
+   subject to changes over time. The goal is to build a resource that
+   provides guide-level explanations for reading and understanding
+   the codebase and its design decisions in its current form.
 
 
 .. toctree::

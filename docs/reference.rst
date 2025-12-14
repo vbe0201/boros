@@ -6,5 +6,5 @@ API Reference
 Task API
 --------
 
-.. autoclass:: boros._low_level.Task
+.. autoclass:: boros._impl.Task
    :members:

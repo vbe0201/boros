@@ -23,8 +23,8 @@ thought of as threads but with some key differences:
   and drives its execution. This allows us to introduce cooperative
   scheduling points with the ``await`` keyword.
 
-We provide a user-facing :class:`~boros._low_level.Task` abstraction
-on the Python side which exposes some metadata about a task in the
+We provide a user-facing :class:`~boros._impl.Task` abstraction on
+the Python side which exposes some metadata about a task in the
 system, but is otherwise not relevant for the intricacies of task
 handling.
 
@@ -40,13 +40,9 @@ These queues are doubly-linked lists which give us *O(1)* insertion and
 removal characteristics. No synchronization is needed for accessing
 them because each thread keeps its own local list.
 
-And by nature of :class:`~boros._low_level.Task` already being an
-allocated and garbage-collected Python object, we place the list
-node directly into the object to avoid further memory allocations
-for this data structure.
-
-For scheduling this implies that a task will always remain pinned to
-the thread it was created on.
+And by nature of :class:`~boros._impl.Task` already being an allocated
+and garbage-collected Python object, we embed the list node directly
+into the object to avoid further memory allocations for this structure.
 
 .. _internals_task_locals:
 
