@@ -13,6 +13,6 @@ typedef struct {
   off_t offset;
 } ReadOperation;
 
-PyObject *read_operation_create();
+PyObject *read_operation_create(PyObject *mod, PyObject *const *args, Py_ssize_t nargsf);
 
 PyTypeObject *read_operation_register(PyObject *mod);
