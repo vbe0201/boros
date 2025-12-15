@@ -6,11 +6,11 @@
 #include "op/base.h"
 
 typedef struct {
-  Operation base;
-  int fd;
-  void *buf;
-  unsigned int nbytes;
-  off_t offset;
+    Operation base;
+    int fd;
+    void *buf;
+    unsigned int nbytes;
+    off_t offset;
 } ReadOperation;
 
 PyObject *read_operation_create(PyObject *mod, PyObject *const *args, Py_ssize_t nargsf);
