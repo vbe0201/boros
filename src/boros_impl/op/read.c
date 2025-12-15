@@ -2,7 +2,7 @@
 /* SPDX-License-Identifier: ISC */
 
 #include "op/read.h"
-
+#include "util/python.h"
 #include <liburing.h>
 
 static void read_prepare(PyObject *self, struct io_uring_sqe *sqe) {
@@ -36,20 +36,32 @@ PyObject *read_operation_create(PyObject *mod, PyObject *const *args, Py_ssize_t
       return NULL;
   }
 
+  void *buf = PyLong_AsVoidPtr(args[1]);
+
+  if (buf == NULL) {
+    return NULL;
+  }
+
   unsigned int nbytes = 0; 
 
-  if (!python_parse_unsigned_int(&nbytes, args[1])) {
+  if (!python_parse_unsigned_int(&nbytes, args[2])) {
       return NULL;
   }
 
+  unsigned int offset = 0;
 
+  if (!python_parse_unsigned_int(&offset, args[3])) {
+      return NULL;
+  }
 
   ReadOperation *op = (ReadOperation *)operation_alloc(state->ReadOperation_type);
 
   if (op != NULL) {
     op->base.vtable = &g_read_operation_vtable;
     op->fd = fd;
+    op->buf = buf;
     op->nbytes = nbytes;
+    op->offset = offset;
   }
 
   return (PyObject *)op;
