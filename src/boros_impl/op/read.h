@@ -15,4 +15,4 @@ typedef struct {
 
 PyObject *read_operation_create();
 
-PyTypeObject *nop_operation_register();
+PyTypeObject *read_operation_register(PyObject *mod);

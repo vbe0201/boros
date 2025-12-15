@@ -9,6 +9,7 @@
 #include "op/base.h"
 #include "op/nop.h"
 #include "op/socket.h"
+#include "op/read.h"
 #include "run.h"
 #include "task.h"
 
@@ -77,7 +78,7 @@ static int module_exec(PyObject *mod) {
         return -1;
     }
 
-    state->ReadOperation_type = read_operation_create(mod);
+    state->ReadOperation_type = read_operation_register(mod);
     if (state->ReadOperation_type == NULL) {
         return -1;
     }
