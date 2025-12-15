@@ -6,6 +6,7 @@
 #include <liburing.h>
 
 #include "util/python.h"
+#include "module.h"
 
 static void read_prepare(PyObject *self, struct io_uring_sqe *sqe) {
     ReadOperation *op = (ReadOperation *)self;
