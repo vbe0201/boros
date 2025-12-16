@@ -9,7 +9,11 @@
 #include <limits.h>
 
 /* Reusable PyObject allocation function based on tp_alloc. */
-PyObject *python_alloc(PyTypeObject *tp);
+static inline PyObject *python_alloc(PyTypeObject *tp) {
+    allocfunc tp_alloc = tp->tp_alloc;
+    assert(tp_alloc != NULL);
+    return tp_alloc(tp, 0);
+}
 
 /* Reusable PyObject tp_dealloc slot for custom types. */
 void python_tp_dealloc(PyObject *self);
