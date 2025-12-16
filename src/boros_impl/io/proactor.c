@@ -122,8 +122,6 @@ void proactor_reap_completions(Proactor *proactor, TaskList *queue) {
         /* Append the waiting Task to the back of the run queue. */
         task_list_push_back(queue, op->awaiter);
 
-        // TODO: At this point technically any Python code can run.
-        // Are we in a sane state so nothing breaks?
         Py_DECREF(op);
     }
 

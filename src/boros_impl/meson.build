@@ -22,5 +22,4 @@ py.extension_module(
     dependencies: [liburing],
     install: true,
     subdir: 'boros',
-    limited_api: '3.12',
 )
