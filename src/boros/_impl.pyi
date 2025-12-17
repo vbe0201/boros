@@ -1,6 +1,9 @@
 # Type stubs for the native boros._low_level module.
 
-from typing import Any, Coroutine
+from collections.abc import Awaitable, Coroutine
+from typing import Any, TypeVar
+
+T = TypeVar("T")
 
 
 class Task:
@@ -26,24 +29,36 @@ class Task:
         ...
 
 
-class EventLoopPolicy:
+class RunConfig:
+    """
+    Configuration for the runtime context.
+
+    These settings are used to create the subsystems and must be passed to
+    every runner invocation.
+    """
+
+    #: The capacity of the io_uring submission queue.
     sq_entries: int
+    #: The capacity of the io_uring completion queue.
     cq_entries: int
+    #: The fd of an existing io_uring instance whose work queue should be shared.
     wqfd: int
 
 
-class EventLoop:
-    def tick(self):
-        ...
-
-
-def create_event_loop(policy: EventLoopPolicy) -> EventLoop:
+def nop(echo: int) -> Awaitable[int]:
+    """Asynchronous nop operation on the io_uring."""
     ...
 
 
-def get_event_loop() -> EventLoop:
+def socket(domain: int, type: int, protocol: int) -> Awaitable[int]:
+    """Asynchronous socket(2) operation on the io_uring."""
     ...
 
 
-def destroy_event_loop():
+def run(coro: Coroutine[Any, None, T], conf: RunConfig) -> T:
+    """
+    Drives a given coroutine to completion.
+
+    This is the entrypoint to the boros runtime.
+    """
     ...

@@ -7,11 +7,13 @@
 
 #include "util/python.h"
 
-PyDoc_STRVAR(g_run_config_doc, "Configuration for the runtime context.");
+PyDoc_STRVAR(g_run_config_doc, "Configuration for the runtime context.\n\n"
+                               "These settings are used to create the subsystems and must be passed to\n"
+                               "every runner invocation.");
 
 PyDoc_STRVAR(g_run_config_sq_size_doc, "The capacity of the io_uring submission queue.");
 PyDoc_STRVAR(g_run_config_cq_size_doc, "The capacity of the io_uring completion queue.");
-PyDoc_STRVAR(g_run_config_wqfd_doc, "The fd of an existing io_uring instance whose backend should be shared.");
+PyDoc_STRVAR(g_run_config_wqfd_doc, "The fd of an existing io_uring instance whose work queue should be shared.");
 
 static int run_config_traverse(PyObject *self, visitproc visit, void *arg) {
     Py_VISIT(Py_TYPE(self));
