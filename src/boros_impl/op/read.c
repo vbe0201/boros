@@ -5,13 +5,19 @@
 
 #include <liburing.h>
 
+#include "bytesobject.h"
+#include "pyerrors.h"
 #include "util/python.h"
 #include "module.h"
 
 static void read_prepare(PyObject *self, struct io_uring_sqe *sqe) {
     ReadOperation *op = (ReadOperation *)self;
 
-    io_uring_prep_read(sqe, op->fd, op->buf, op->nbytes, op->offset);
+    char *buf;
+
+    buf = PyBytes_AsString(op->buf);
+
+    io_uring_prep_read(sqe, op->fd, buf, op->nbytes, op->offset);
 }
 
 static void read_complete(PyObject *self, struct io_uring_cqe *cqe) {
@@ -36,24 +42,29 @@ PyObject *read_operation_create(PyObject *mod, PyObject *const *args, Py_ssize_t
     int fd = 0;
 
     if (!python_parse_int(&fd, args[0])) {
-        return NULL;
-    }
-
-    void *buf = PyLong_AsVoidPtr(args[1]);
-
-    if (buf == NULL) {
+        // TODO: Error message
         return NULL;
     }
 
     unsigned int nbytes = 0;
 
     if (!python_parse_unsigned_int(&nbytes, args[2])) {
+        // TODO: Error message
         return NULL;
     }
 
     unsigned int offset = 0;
 
     if (!python_parse_unsigned_int(&offset, args[3])) {
+        // TODO: Error message
+        return NULL;
+    }
+
+    PyObject *buf;
+    buf = PyBytes_FromStringAndSize(NULL, nbytes);
+    
+    if (buf != NULL) {
+        PyErr_Format(PyExc_OSError, "Couldn't create buffer with size %zu", nbytes);
         return NULL;
     }
 

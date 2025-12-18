@@ -8,7 +8,7 @@
 typedef struct {
     Operation base;
     int fd;
-    void *buf;
+    PyObject *buf;
     unsigned int nbytes;
     off_t offset;
 } ReadOperation;
