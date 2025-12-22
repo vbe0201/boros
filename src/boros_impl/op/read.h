@@ -7,7 +7,6 @@
 
 typedef struct {
     Operation base;
-    int fd;
     PyObject *buf;
     unsigned int nbytes;
     off_t offset;

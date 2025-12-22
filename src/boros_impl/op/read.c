@@ -17,12 +17,18 @@ static void read_prepare(PyObject *self, struct io_uring_sqe *sqe) {
 
     buf = PyBytes_AsString(op->buf);
 
-    io_uring_prep_read(sqe, op->fd, buf, op->nbytes, op->offset);
+    io_uring_prep_read(sqe, op->base.scratch, buf, op->nbytes, op->offset);
 }
 
 static void read_complete(PyObject *self, struct io_uring_cqe *cqe) {
-    Operation *op = (Operation *)self;
-    outcome_capture(&op->outcome, PyLong_FromLong(cqe->res));
+    ReadOperation *op = (ReadOperation *)self;
+    
+    if (cqe->res < 0) {
+        outcome_capture_errno(cqe->res);
+    } else {
+        _PyBytes_Resize(&op->buf, cqe->res);
+        outcome_capture(&op->outcome, op->buf);
+    }
 }
 
 static OperationVTable g_read_operation_vtable = {
@@ -42,21 +48,18 @@ PyObject *read_operation_create(PyObject *mod, PyObject *const *args, Py_ssize_t
     int fd = 0;
 
     if (!python_parse_int(&fd, args[0])) {
-        // TODO: Error message
         return NULL;
     }
 
     unsigned int nbytes = 0;
 
     if (!python_parse_unsigned_int(&nbytes, args[2])) {
-        // TODO: Error message
         return NULL;
     }
 
-    unsigned int offset = 0;
+    off_t offset = 0;
 
-    if (!python_parse_unsigned_int(&offset, args[3])) {
-        // TODO: Error message
+    if (!PyLong_AsUnsignedLongLong(&offset, args[3])) {
         return NULL;
     }
 
@@ -71,17 +74,47 @@ PyObject *read_operation_create(PyObject *mod, PyObject *const *args, Py_ssize_t
     ReadOperation *op = (ReadOperation *)operation_alloc(state->ReadOperation_type);
 
     if (op != NULL) {
-        op->base.vtable = &g_read_operation_vtable;
-        op->fd          = fd;
-        op->buf         = buf;
-        op->nbytes      = nbytes;
-        op->offset      = offset;
+        op->base.vtable  = &g_read_operation_vtable;
+        op->base.scratch = fd;
+        op->buf          = buf;
+        op->nbytes       = nbytes;
+        op->offset       = offset;
     }
 
     return (PyObject *)op;
 }
 
+int read_traverse(ReadOperation *self, visitproc visit, void *arg) {
+    Py_VISIT(self->base.awaiter);
+    Py_VISIT(self->buf);
+
+    int res = outcome_traverse(&(self->base.outcome), visit, arg);
+    if (res != 0) {
+        return res;
+    }
+
+    return 0;
+}
+
+int read_clear(ReadOperation *self) {
+    Py_CLEAR(self->base.awaiter);
+    Py_CLEAR(self->buf);
+    outcome_clear(&(self->base.outcome));
+    return 0;
+}
+
+static int read_traverse_impl(PyObject *self, visitproc visit, void *arg) {
+    Py_VISIT(Py_TYPE(self));
+    return read_traverse((ReadOperation *)self, visit, arg);
+}
+
+static int read_clear_impl(PyObject *self) {
+    return read_clear((ReadOperation *)self);
+}
+
 static PyType_Slot g_read_operation_slots[] = {
+    {Py_tp_traverse, read_traverse_impl},
+    {Py_tp_clear, read_clear_impl},
     {0, NULL},
 };
 
@@ -89,7 +122,7 @@ static PyType_Spec g_read_operation_spec = {
     .name      = "_impl._ReadOperation",
     .basicsize = sizeof(ReadOperation),
     .itemsize  = 4,
-    .flags     = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_IMMUTABLETYPE,
+    .flags     = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_IMMUTABLETYPE,
     .slots     = g_read_operation_slots,
 };
 
