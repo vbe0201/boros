@@ -57,9 +57,9 @@ PyObject *read_operation_create(PyObject *mod, PyObject *const *args, Py_ssize_t
         return NULL;
     }
 
-    off_t offset = 0;
+    unsigned long long offset = 0;
 
-    if (!PyLong_AsUnsignedLongLong(&offset, args[3])) {
+    if (!python_parse_unsigned_long_long(&offset, args[3])) {
         return NULL;
     }
 
