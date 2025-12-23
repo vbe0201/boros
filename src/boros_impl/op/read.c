@@ -41,8 +41,8 @@ PyObject *read_operation_create(PyObject *mod, PyObject *const *args, Py_ssize_t
     Py_ssize_t nargs = PyVectorcall_NARGS(nargsf);
     ImplState *state = PyModule_GetState(mod);
 
-    if (nargs != 4) {
-        PyErr_Format(PyExc_TypeError, "Expected 4 arguments, got %zu instead", nargs);
+    if (nargs != 3) {
+        PyErr_Format(PyExc_TypeError, "Expected 3 arguments, got %zu instead", nargs);
         return NULL;
     }
 
@@ -54,13 +54,13 @@ PyObject *read_operation_create(PyObject *mod, PyObject *const *args, Py_ssize_t
 
     unsigned int nbytes = 0;
 
-    if (!python_parse_unsigned_int(&nbytes, args[2])) {
+    if (!python_parse_unsigned_int(&nbytes, args[1])) {
         return NULL;
     }
 
     unsigned long long offset = 0;
 
-    if (!python_parse_unsigned_long_long(&offset, args[3])) {
+    if (!python_parse_unsigned_long_long(&offset, args[2])) {
         return NULL;
     }
 
