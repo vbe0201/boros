@@ -54,6 +54,10 @@ def socket(domain: int, type: int, protocol: int) -> Awaitable[int]:
     """Asynchronous socket(2) operation on the io_uring."""
     ...
 
+def read(fd: int, count: int, offset: int) -> Awaitable[bytes]:
+    """Asynchronous read(2) operation on the io_uring."""
+    ...
+
 
 def run(coro: Coroutine[Any, None, T], conf: RunConfig) -> T:
     """
