@@ -24,7 +24,7 @@ static void read_complete(PyObject *self, struct io_uring_cqe *cqe) {
     ReadOperation *op = (ReadOperation *)self;
     
     if (cqe->res < 0) {
-        outcome_capture_errno(cqe->res);
+        outcome_capture_errno(-cqe->res);
     } else {
         _PyBytes_Resize(&op->buf, cqe->res);
         outcome_capture(&op->outcome, op->buf);
