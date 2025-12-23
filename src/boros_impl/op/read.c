@@ -84,32 +84,17 @@ PyObject *read_operation_create(PyObject *mod, PyObject *const *args, Py_ssize_t
     return (PyObject *)op;
 }
 
-int read_traverse(ReadOperation *self, visitproc visit, void *arg) {
-    Py_VISIT(self->base.awaiter);
-    Py_VISIT(self->buf);
-
-    int res = outcome_traverse(&(self->base.outcome), visit, arg);
-    if (res != 0) {
-        return res;
-    }
-
-    return 0;
-}
-
-int read_clear(ReadOperation *self) {
-    Py_CLEAR(self->base.awaiter);
-    Py_CLEAR(self->buf);
-    outcome_clear(&(self->base.outcome));
-    return 0;
-}
-
 static int read_traverse_impl(PyObject *self, visitproc visit, void *arg) {
     Py_VISIT(Py_TYPE(self));
-    return read_traverse((ReadOperation *)self, visit, arg);
-}
 
+    Py_VISIT(((ReadOperation*)self)->buf);
+
+    return operation_traverse((ReadOperation *)self, visit, arg);
+}
 static int read_clear_impl(PyObject *self) {
-    return read_clear((ReadOperation *)self);
+    Py_CLEAR(self->buf);
+    
+    return operation_clear((ReadOperation *)self);
 }
 
 static PyType_Slot g_read_operation_slots[] = {
