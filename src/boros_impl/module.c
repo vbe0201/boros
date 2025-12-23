@@ -97,6 +97,7 @@ static int module_exec(PyObject *mod) {
 
 PyDoc_STRVAR(g_nop_doc, "Asynchronous nop operation on the io_uring.");
 PyDoc_STRVAR(g_socket_doc, "Asynchronous socket(2) operation on the io_uring.");
+PyDoc_STRVAR(g_read_doc, "Asynchronous read(2) operation on the io_uring.");
 
 PyDoc_STRVAR(g_run_doc, "Drives a given coroutine to completion.\n\n"
                         "This is the entrypoint to the boros runtime.");
@@ -107,7 +108,7 @@ static PyMethodDef g_module_methods[] = {
     {"nop", (PyCFunction)nop_operation_create, METH_O, g_nop_doc},
     {"socket", (PyCFunction)socket_operation_create, METH_FASTCALL, g_socket_doc},
     {"run", (PyCFunction)boros_run, METH_FASTCALL, g_run_doc},
-    {"read", (PyCFunction)read_operation_create, METH_FASTCALL, PyDoc_STR("Performs a read operation")},
+    {"read", (PyCFunction)read_operation_create, METH_FASTCALL, g_read_doc},
     {NULL, NULL, 0, NULL},
 };
 #pragma GCC diagnostic pop

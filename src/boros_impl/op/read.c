@@ -28,7 +28,7 @@ static void read_complete(PyObject *self, struct io_uring_cqe *cqe) {
         outcome_capture_errno(&(op->base.outcome));
     } else {
         _PyBytes_Resize(&op->buf, cqe->res);
-        outcome_capture(&(op->base.outcome), Py_NewRef(op->buf););
+        outcome_capture(&(op->base.outcome), Py_NewRef(op->buf));
     }
 }
 
