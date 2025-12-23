@@ -24,10 +24,11 @@ static void read_complete(PyObject *self, struct io_uring_cqe *cqe) {
     ReadOperation *op = (ReadOperation *)self;
     
     if (cqe->res < 0) {
-        outcome_capture_errno(-cqe->res);
+        errno = -cqe->res;
+        outcome_capture_errno(&(op->base.outcome));
     } else {
         _PyBytes_Resize(&op->buf, cqe->res);
-        outcome_capture(&op->outcome, op->buf);
+        outcome_capture(&(op->base.outcome), Py_NewRef(op->buf););
     }
 }
 
@@ -87,14 +88,14 @@ PyObject *read_operation_create(PyObject *mod, PyObject *const *args, Py_ssize_t
 static int read_traverse_impl(PyObject *self, visitproc visit, void *arg) {
     Py_VISIT(Py_TYPE(self));
 
-    Py_VISIT(((ReadOperation*)self)->buf);
+    Py_VISIT(((ReadOperation *)self)->buf);
 
-    return operation_traverse((ReadOperation *)self, visit, arg);
+    return operation_traverse(&((ReadOperation *)self)->base, visit, arg);
 }
 static int read_clear_impl(PyObject *self) {
-    Py_CLEAR(self->buf);
+    Py_CLEAR(((ReadOperation *)self)->buf);
     
-    return operation_clear((ReadOperation *)self);
+    return operation_clear(&((ReadOperation *)self)->base);
 }
 
 static PyType_Slot g_read_operation_slots[] = {
