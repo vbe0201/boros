@@ -6,7 +6,7 @@
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
 
-#include <linux/io_uring.h>
+#include <liburing.h>
 
 #include "task.h"
 #include "util/outcome.h"
