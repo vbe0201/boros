@@ -67,9 +67,8 @@ PyObject *read_operation_create(PyObject *mod, PyObject *const *args, Py_ssize_t
     PyObject *buf;
     buf = PyBytes_FromStringAndSize(NULL, nbytes);
     
-    if (buf != NULL) {
-        PyErr_Format(PyExc_OSError, "Couldn't create buffer with size %zu", nbytes);
-        return NULL;
+    if (buf == NULL) {
+        return PyErr_NoMemory();
     }
 
     ReadOperation *op = (ReadOperation *)operation_alloc(state->ReadOperation_type);
