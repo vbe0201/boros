@@ -12,6 +12,7 @@ boros_impl_sources = [
     'op/nop.c',
     'op/socket.c',
     'op/read.c',
+    'op/write.c',
 
     'util/outcome.c',
     'util/python.c',
