@@ -56,3 +56,14 @@ bool python_parse_unsigned_int(unsigned int *out, PyObject *ob) {
     *out = tmp;
     return true;
 }
+
+bool python_parse_unsigned_long_long(unsigned long long *out, PyObject *ob) {
+    unsigned long long tmp = PyLong_AsUnsignedLongLong(ob);
+
+    if (PyErr_Occurred()) {
+        return false;
+    }
+
+    *out = tmp;
+    return true;
+}

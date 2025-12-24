@@ -23,3 +23,6 @@ bool python_parse_int(int *out, PyObject *ob);
 
 /* Attempts to parse a given PyObject into a C unsigned int value. */
 bool python_parse_unsigned_int(unsigned int *out, PyObject *ob);
+
+/* Attempts to parse a given PyObject into a C unsigned long long value. */
+bool python_parse_unsigned_long_long(unsigned long long *out, PyObject *ob);

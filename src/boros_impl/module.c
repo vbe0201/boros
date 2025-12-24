@@ -9,6 +9,7 @@
 #include "op/base.h"
 #include "op/nop.h"
 #include "op/socket.h"
+#include "op/read.h"
 #include "run.h"
 #include "task.h"
 
@@ -20,6 +21,7 @@ static int module_traverse(PyObject *mod, visitproc visit, void *arg) {
     Py_VISIT(state->OperationWaiter_type);
     Py_VISIT(state->NopOperation_type);
     Py_VISIT(state->SocketOperation_type);
+    Py_VISIT(state->ReadOperation_type);
     return 0;
 }
 
@@ -31,6 +33,7 @@ static int module_clear(PyObject *mod) {
     Py_CLEAR(state->OperationWaiter_type);
     Py_CLEAR(state->NopOperation_type);
     Py_CLEAR(state->SocketOperation_type);
+    Py_CLEAR(state->ReadOperation_type);
     return 0;
 }
 
@@ -75,6 +78,11 @@ static int module_exec(PyObject *mod) {
         return -1;
     }
 
+    state->ReadOperation_type = read_operation_register(mod);
+    if (state->ReadOperation_type == NULL) {
+        return -1;
+    }
+
     state->local_context = PyThread_tss_alloc();
     if (state->local_context == NULL) {
         return -1;
@@ -89,6 +97,7 @@ static int module_exec(PyObject *mod) {
 
 PyDoc_STRVAR(g_nop_doc, "Asynchronous nop operation on the io_uring.");
 PyDoc_STRVAR(g_socket_doc, "Asynchronous socket(2) operation on the io_uring.");
+PyDoc_STRVAR(g_read_doc, "Asynchronous read(2) operation on the io_uring.");
 
 PyDoc_STRVAR(g_run_doc, "Drives a given coroutine to completion.\n\n"
                         "This is the entrypoint to the boros runtime.");
@@ -99,6 +108,7 @@ static PyMethodDef g_module_methods[] = {
     {"nop", (PyCFunction)nop_operation_create, METH_O, g_nop_doc},
     {"socket", (PyCFunction)socket_operation_create, METH_FASTCALL, g_socket_doc},
     {"run", (PyCFunction)boros_run, METH_FASTCALL, g_run_doc},
+    {"read", (PyCFunction)read_operation_create, METH_FASTCALL, g_read_doc},
     {NULL, NULL, 0, NULL},
 };
 #pragma GCC diagnostic pop
