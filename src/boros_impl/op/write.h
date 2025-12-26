@@ -8,7 +8,6 @@
 typedef struct {
   Operation base;
   PyObject *buf;
-  Py_ssize_t nbytes;
   unsigned long long offset;
 } WriteOperation;
 

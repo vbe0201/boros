@@ -12,9 +12,11 @@ static void write_prepare(PyObject *self, struct io_uring_sqe *sqe) {
 
     char *buf;
 
+    size_t nbytes = PyBytes_Size(op->buf);
+    
     buf = PyBytes_AsString(op->buf);
 
-    io_uring_prep_write(sqe, op->base.scratch, buf, op->nbytes, op->offset); 
+    io_uring_prep_write(sqe, op->base.scratch, buf, nbytes, op->offset); 
 }
 
 static void write_complete(PyObject *self, struct io_uring_cqe *cqe) {
@@ -69,7 +71,6 @@ PyObject *write_operation_create(PyObject *mod, PyObject *const *args, Py_ssize_
         op->base.vtable = &g_write_operation_vtable;
         op->base.scratch = fd;
         op->buf = buf;
-        op->nbytes = PyBytes_Size(buf);
         op->offset = offset;
     }
 
