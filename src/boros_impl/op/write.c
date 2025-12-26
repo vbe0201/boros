@@ -78,12 +78,20 @@ PyObject *write_operation_create(PyObject *mod, PyObject *const *args, Py_ssize_
 
 }
 
-static int write_traverse_impl() {
-    // TODO: Clarify if these function is needed or operation_traverse will do
+static int write_traverse_impl(PyObject *self, visitproc visit, void *arg) {
+    Py_VISIT(Py_TYPE(self));
+
+    Py_VISIT(((WriteOperation *)self)->buf);
+
+    return operation_traverse(&((WriteOperation *)self)->base, visit, arg);
 } 
 
-static int write_clear_impl() {
-    // TODO: Clarify if these function is needed or operation_clear suffices
+static int write_clear_impl(PyObject *self) {
+
+    Py_CLEAR(((WriteOperation *)self)->buf);
+
+    return operation_clear(&((WriteOperation *)self)->base);
+
 }
 
 static PyType_Slot g_write_operation_slots[] = {
