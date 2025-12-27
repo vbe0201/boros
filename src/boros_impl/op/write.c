@@ -7,8 +7,8 @@
 
 #include "bytesobject.h"
 #include "pyerrors.h"
-#include "module.h"
 #include "util/python.h"
+#include "module.h"
 
 static void write_prepare(PyObject *self, struct io_uring_sqe *sqe) {
     WriteOperation *op = (WriteOperation *)self;
