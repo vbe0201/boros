@@ -4,6 +4,9 @@
 #include "op/write.h"
 
 #include <liburing.h>
+
+#include "bytesobject.h"
+#include "pyerrors.h"
 #include "module.h"
 #include "util/python.h"
 
@@ -51,13 +54,13 @@ PyObject *write_operation_create(PyObject *mod, PyObject *const *args, Py_ssize_
         return NULL;
     }
 
+    if (!PyBytes_Check(args[1])) {
+        return NULL;
+    }
+
     PyObject *buf;
 
     buf = args[1];
-
-    if (buf == NULL) {
-        return NULL;
-    } 
 
     unsigned long long offset = 0;
 
@@ -104,7 +107,7 @@ static PyType_Spec g_write_operation_spec = {
     .name = "_impl._WriteOperation",
     .basicsize = sizeof(WriteOperation),
     .itemsize = 4,
-    .flags = Py_TPFLAGS_DEFAULT,
+    .flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_IMMUTABLETYPE,
     .slots = g_write_operation_slots,
 };
 
