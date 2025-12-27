@@ -55,6 +55,7 @@ PyObject *write_operation_create(PyObject *mod, PyObject *const *args, Py_ssize_
     }
 
     if (!PyBytes_Check(args[1])) {
+        PyErr_Format(PyExc_ValueError, "Expected variable of type bytes");
         return NULL;
     }
 
