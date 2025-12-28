@@ -107,7 +107,7 @@ static PyType_Slot g_write_operation_slots[] = {
 static PyType_Spec g_write_operation_spec = {
     .name = "_impl._WriteOperation",
     .basicsize = sizeof(WriteOperation),
-    .itemsize = 4,
+    .itemsize = 0,
     .flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_IMMUTABLETYPE,
     .slots = g_write_operation_slots,
 };
