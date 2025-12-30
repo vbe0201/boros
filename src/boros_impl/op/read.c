@@ -106,7 +106,7 @@ static PyType_Slot g_read_operation_slots[] = {
 static PyType_Spec g_read_operation_spec = {
     .name      = "_impl._ReadOperation",
     .basicsize = sizeof(ReadOperation),
-    .itemsize  = 4,
+    .itemsize  = 0,
     .flags     = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_IMMUTABLETYPE,
     .slots     = g_read_operation_slots,
 };
