@@ -62,6 +62,9 @@ def write(fd: int, buf: bytes, offset: int) -> Awaitable[int]:
     """Asynchronous write(2) operation on the io_uring."""
     ...
 
+def close(fd: int) -> Awaitable[int]:
+    """Asynchronous close(2) operation on the io_uring."""
+
 
 def run(coro: Coroutine[Any, None, T], conf: RunConfig) -> T:
     """
