@@ -7,6 +7,7 @@
 
 #include "context/run_config.h"
 #include "op/base.h"
+#include "op/close.h"
 #include "op/nop.h"
 #include "op/socket.h"
 #include "op/read.h"
@@ -92,6 +93,9 @@ static int module_exec(PyObject *mod) {
     }
 
     state->CloseOperation_type = close_operation_register(mod);
+    if (state->WriteOperation_type == NULL) {
+        return -1;
+    }
 
     state->local_context = PyThread_tss_alloc();
     if (state->local_context == NULL) {
