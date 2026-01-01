@@ -57,9 +57,19 @@ PyObject *close_operation_create(PyObject *mod, PyObject *const *args, Py_ssize_
     return (PyObject *)op;
 }
 
+static int close_traverse_impl(PyObject *self, visitproc visit, void *arg) {
+    Py_VISIT(Py_TYPE(self));
+
+    return operation_traverse(&((CloseOperation *)self)->base, visit, arg);
+}
+static int close_clear_impl(PyObject *self) {
+    
+    return operation_clear(&((CloseOperation *)self)->base);
+}
+
 static PyType_Slot g_close_operation_slots[] = {
-    {Py_tp_traverse, operation_traverse_impl},
-    {Py_tp_clear, operation_clear_impl},
+    {Py_tp_traverse, close_traverse_impl},
+    {Py_tp_clear, close_clear_impl},
     {0, NULL},
 };
 
