@@ -35,7 +35,7 @@ int outcome_traverse(Outcome *outcome, visitproc visit, void *arg) {
 void outcome_clear(Outcome *outcome) {
     PyObject *ob = untag_pointer(outcome->value);
     Py_CLEAR(ob);
-    outcome->value = ob;
+    outcome->value = NULL;
 }
 
 void outcome_store_result(Outcome *outcome, PyObject *ob) {
@@ -60,17 +60,19 @@ void outcome_capture_error(Outcome *outcome) {
 
 void outcome_capture_errno(Outcome *outcome) {
     int e = errno;
+    PyObject *error;
+    PyObject *message = NULL;
 
-    PyObject *error = PyLong_FromLong(e);
+    error = PyLong_FromLong(e);
     if (error == NULL) {
         outcome_capture_error(outcome);
-        return;
+        goto cleanup;
     }
 
-    PyObject *message = PyUnicode_DecodeLocale(strerror(e), "surrogateescape");
+    message = PyUnicode_DecodeLocale(strerror(e), "surrogateescape");
     if (message == NULL) {
         outcome_capture_error(outcome);
-        return;
+        goto cleanup;
     }
 
     PyObject *args[3] = {NULL, error, message};
@@ -79,10 +81,14 @@ void outcome_capture_errno(Outcome *outcome) {
     PyObject *exc = PyObject_Vectorcall(PyExc_OSError, args + 1, nargsf, NULL);
     if (exc == NULL) {
         outcome_capture_error(outcome);
-        return;
+        goto cleanup;
     }
 
     outcome_store_error(outcome, exc);
+
+cleanup:
+    Py_XDECREF(error);
+    Py_XDECREF(message);
 }
 
 PyObject *outcome_unwrap(Outcome *outcome) {
