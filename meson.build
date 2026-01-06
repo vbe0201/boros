@@ -8,6 +8,9 @@ project(
         'warning_level=2',
         'c_std=gnu23',
         'b_ndebug=if-release',
+
+        'liburing:default_library=static',
+        'liburing:warning_level=0',
     ],
 )
 
@@ -17,8 +20,9 @@ endif
 
 liburing = dependency(
     'liburing',
+    version: '>= 2.12',
     fallback: 'liburing',
-    default_options: ['default_library=static'],
+    static: true,
     required: true,
 )
 
