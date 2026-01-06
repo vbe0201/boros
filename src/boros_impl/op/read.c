@@ -71,7 +71,7 @@ PyObject *read_operation_create(PyObject *mod, PyObject *const *args, Py_ssize_t
         return PyErr_NoMemory();
     }
 
-    ReadOperation *op = (ReadOperation *)operation_alloc(state->ReadOperation_type);
+    ReadOperation *op = (ReadOperation *)operation_alloc(state->ReadOperation_type, state);
 
     if (op != NULL) {
         op->base.vtable  = &g_read_operation_vtable;

@@ -48,7 +48,7 @@ PyObject *socket_operation_create(PyObject *mod, PyObject *const *args, Py_ssize
         return NULL;
     }
 
-    SocketOperation *op = (SocketOperation *)operation_alloc(state->SocketOperation_type);
+    SocketOperation *op = (SocketOperation *)operation_alloc(state->SocketOperation_type, state);
     if (op != NULL) {
         op->base.vtable  = &g_socket_operation_vtable;
         op->base.scratch = domain;

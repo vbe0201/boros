@@ -8,11 +8,12 @@
 
 /* Operation implementation */
 
-Operation *operation_alloc(PyTypeObject *tp) {
+Operation *operation_alloc(PyTypeObject *tp, ImplState *state) {
     Operation *op = (Operation *)python_alloc(tp);
     if (op != NULL) {
-        op->state   = State_Pending;
-        op->awaiter = NULL;
+        op->module_state = state;
+        op->state        = State_Pending;
+        op->awaiter      = NULL;
         outcome_init(&op->outcome);
     }
 
@@ -46,10 +47,15 @@ static int operation_clear_impl(PyObject *self) {
 }
 
 static PyObject *operation_await(PyObject *self) {
-    /* FIXME: This causes memory corruption without PyType_GetModuleByDef. */
-    ImplState *state = PyModule_GetState(PyType_GetModule(Py_TYPE(self)));
+    Operation *op = (Operation *)self;
 
-    OperationWaiter *waiter = (OperationWaiter *)python_alloc(state->OperationWaiter_type);
+    /* Guard against attempts to build subclasses without a vtable. */
+    if (op->vtable == NULL) {
+        PyErr_SetString(PyExc_TypeError, "Operation subclasses outside of boros._impl are unsupported");
+        return NULL;
+    }
+
+    OperationWaiter *waiter = (OperationWaiter *)python_alloc(op->module_state->OperationWaiter_type);
     if (waiter != NULL) {
         waiter->op = Py_NewRef(self);
     }

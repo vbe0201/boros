@@ -6,7 +6,7 @@
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
 
-typedef struct {
+typedef struct _ImplState {
     /* Python type objects that belong to this module. */
     PyTypeObject *RunConfig_type;
     PyTypeObject *Task_type;

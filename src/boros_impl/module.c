@@ -106,7 +106,7 @@ static int module_exec(PyObject *mod) {
 PyDoc_STRVAR(g_nop_doc, "Asynchronous nop operation on the io_uring.");
 PyDoc_STRVAR(g_socket_doc, "Asynchronous socket(2) operation on the io_uring.");
 PyDoc_STRVAR(g_read_doc, "Asynchronous read(2) operation on the io_uring.");
-PyDoc_STRVAR(g_write_doc, "Asynchronous write(2) operation on the io_uring");
+PyDoc_STRVAR(g_write_doc, "Asynchronous write(2) operation on the io_uring.");
 
 PyDoc_STRVAR(g_run_doc, "Drives a given coroutine to completion.\n\n"
                         "This is the entrypoint to the boros runtime.");

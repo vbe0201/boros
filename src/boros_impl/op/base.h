@@ -24,10 +24,13 @@ typedef struct {
     void (*complete)(PyObject *, struct io_uring_cqe *);
 } OperationVTable;
 
+struct _ImplState;
+
 /* Represents the base state of I/O operations in the runtime. */
 typedef struct {
     PyObject_HEAD
     OperationVTable *vtable;
+    struct _ImplState *module_state;
     Task *awaiter;
     OperationState state;
     int scratch;
@@ -41,7 +44,7 @@ typedef struct {
 } OperationWaiter;
 
 /* Allocates an Operation and initializes the base state. */
-Operation *operation_alloc(PyTypeObject *tp);
+Operation *operation_alloc(PyTypeObject *tp, struct _ImplState *state);
 
 /* Reusable garbage collection hooks for Operation fields. */
 int operation_traverse(Operation *self, visitproc visit, void *arg);

@@ -34,7 +34,7 @@ PyObject *nop_operation_create(PyObject *mod, PyObject *res_) {
         return NULL;
     }
 
-    NopOperation *op = (NopOperation *)operation_alloc(state->NopOperation_type);
+    NopOperation *op = (NopOperation *)operation_alloc(state->NopOperation_type, state);
     if (op != NULL) {
         op->base.vtable  = &g_nop_operation_vtable;
         op->base.scratch = res;

@@ -69,7 +69,7 @@ PyObject *write_operation_create(PyObject *mod, PyObject *const *args, Py_ssize_
         return NULL;
     }
 
-    WriteOperation *op = (WriteOperation *)operation_alloc(state->WriteOperation_type);
+    WriteOperation *op = (WriteOperation *)operation_alloc(state->WriteOperation_type, state);
 
     if (op != NULL) {
         op->base.vtable = &g_write_operation_vtable;
