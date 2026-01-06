@@ -1,6 +1,7 @@
 # Type stubs for the native boros._low_level module.
 
 from collections.abc import Awaitable, Coroutine
+from os import PathLike
 from typing import Any, TypeVar
 
 T = TypeVar("T")
@@ -54,16 +55,29 @@ def socket(domain: int, type: int, protocol: int) -> Awaitable[int]:
     """Asynchronous socket(2) operation on the io_uring."""
     ...
 
+
 def read(fd: int, count: int, offset: int) -> Awaitable[bytes]:
     """Asynchronous read(2) operation on the io_uring."""
     ...
+
 
 def write(fd: int, buf: bytes, offset: int) -> Awaitable[int]:
     """Asynchronous write(2) operation on the io_uring."""
     ...
 
+
 def close(fd: int) -> Awaitable[int]:
     """Asynchronous close(2) operation on the io_uring."""
+    ...
+
+
+def open(
+    path: str | bytes | PathLike[str] | PathLike[bytes],
+    flags: int,
+    mode: int,
+) -> Awaitable[int]:
+    """Asynchronous open(2) operation on the io_uring."""
+    ...
 
 
 def run(coro: Coroutine[Any, None, T], conf: RunConfig) -> T:
