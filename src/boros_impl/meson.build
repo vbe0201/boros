@@ -10,6 +10,7 @@ boros_impl_sources = [
 
     'op/base.c',
     'op/nop.c',
+    'op/open.c',
     'op/socket.c',
     'op/read.c',
     'op/write.c',

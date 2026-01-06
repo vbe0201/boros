@@ -9,8 +9,9 @@
 #include "op/base.h"
 #include "op/close.h"
 #include "op/nop.h"
-#include "op/socket.h"
+#include "op/open.h"
 #include "op/read.h"
+#include "op/socket.h"
 #include "op/write.h"
 #include "run.h"
 #include "task.h"
@@ -23,8 +24,10 @@ static int module_traverse(PyObject *mod, visitproc visit, void *arg) {
     Py_VISIT(state->OperationWaiter_type);
     Py_VISIT(state->NopOperation_type);
     Py_VISIT(state->SocketOperation_type);
+    Py_VISIT(state->OpenOperation_type);
     Py_VISIT(state->ReadOperation_type);
     Py_VISIT(state->WriteOperation_type);
+    Py_VISIT(state->CloseOperation_type);
     return 0;
 }
 
@@ -36,8 +39,10 @@ static int module_clear(PyObject *mod) {
     Py_CLEAR(state->OperationWaiter_type);
     Py_CLEAR(state->NopOperation_type);
     Py_CLEAR(state->SocketOperation_type);
+    Py_CLEAR(state->OpenOperation_type);
     Py_CLEAR(state->ReadOperation_type);
     Py_CLEAR(state->WriteOperation_type);
+    Py_CLEAR(state->CloseOperation_type);
     return 0;
 }
 
@@ -82,6 +87,11 @@ static int module_exec(PyObject *mod) {
         return -1;
     }
 
+    state->OpenOperation_type = open_operation_register(mod);
+    if (state->OpenOperation_type == NULL) {
+        return -1;
+    }
+
     state->ReadOperation_type = read_operation_register(mod);
     if (state->ReadOperation_type == NULL) {
         return -1;
@@ -93,7 +103,7 @@ static int module_exec(PyObject *mod) {
     }
 
     state->CloseOperation_type = close_operation_register(mod);
-    if (state->WriteOperation_type == NULL) {
+    if (state->CloseOperation_type == NULL) {
         return -1;
     }
 
@@ -114,6 +124,7 @@ PyDoc_STRVAR(g_socket_doc, "Asynchronous socket(2) operation on the io_uring.");
 PyDoc_STRVAR(g_read_doc, "Asynchronous read(2) operation on the io_uring.");
 PyDoc_STRVAR(g_write_doc, "Asynchronous write(2) operation on the io_uring.");
 PyDoc_STRVAR(g_close_doc, "Asynchronous close(2) operation on the io_uring.");
+PyDoc_STRVAR(g_open_doc, "Asynchronous open(2) operation on the io_uring.");
 
 PyDoc_STRVAR(g_run_doc, "Drives a given coroutine to completion.\n\n"
                         "This is the entrypoint to the boros runtime.");
@@ -124,6 +135,7 @@ static PyMethodDef g_module_methods[] = {
     {"nop", (PyCFunction)nop_operation_create, METH_O, g_nop_doc},
     {"socket", (PyCFunction)socket_operation_create, METH_FASTCALL, g_socket_doc},
     {"run", (PyCFunction)boros_run, METH_FASTCALL, g_run_doc},
+    {"open", (PyCFunction)open_operation_create, METH_FASTCALL, g_open_doc},
     {"read", (PyCFunction)read_operation_create, METH_FASTCALL, g_read_doc},
     {"write", (PyCFunction)write_operation_create, METH_FASTCALL, g_write_doc},
     {"close", (PyCFunction)close_operation_create, METH_FASTCALL, g_close_doc},

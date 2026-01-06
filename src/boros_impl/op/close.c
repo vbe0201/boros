@@ -5,19 +5,17 @@
 
 #include <liburing.h>
 
-#include <Python.h>
-#include "util/python.h"
 #include "module.h"
+#include "util/python.h"
 
 static void close_prepare(PyObject *self, struct io_uring_sqe *sqe) {
     CloseOperation *op = (CloseOperation *)self;
-
     io_uring_prep_close(sqe, op->base.scratch);
 }
 
 static void close_complete(PyObject *self, struct io_uring_cqe *cqe) {
     CloseOperation *op = (CloseOperation *)self;
-    
+
     if (cqe->res < 0) {
         errno = -cqe->res;
         outcome_capture_errno(&(op->base.outcome));
@@ -32,22 +30,20 @@ static OperationVTable g_close_operation_vtable = {
 };
 
 PyObject *close_operation_create(PyObject *mod, PyObject *const *args, Py_ssize_t nargsf) {
-    Py_ssize_t nargs = PyVectorcall_NARGS(nargsf);
     ImplState *state = PyModule_GetState(mod);
 
+    Py_ssize_t nargs = PyVectorcall_NARGS(nargsf);
     if (nargs != 1) {
-        PyErr_Format(PyExc_TypeError, "Expected 1 arguments, got %zu instead", nargs);
+        PyErr_Format(PyExc_TypeError, "Expected 1 argument, got %zu instead", nargs);
         return NULL;
     }
 
     int fd = 0;
-
     if (!python_parse_int(&fd, args[0])) {
         return NULL;
     }
 
     CloseOperation *op = (CloseOperation *)operation_alloc(state->CloseOperation_type, state);
-
     if (op != NULL) {
         op->base.vtable  = &g_close_operation_vtable;
         op->base.scratch = fd;

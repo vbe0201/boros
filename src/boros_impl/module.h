@@ -14,6 +14,7 @@ typedef struct _ImplState {
     PyTypeObject *OperationWaiter_type;
     PyTypeObject *NopOperation_type;
     PyTypeObject *SocketOperation_type;
+    PyTypeObject *OpenOperation_type;
     PyTypeObject *ReadOperation_type;
     PyTypeObject *WriteOperation_type;
     PyTypeObject *CloseOperation_type;

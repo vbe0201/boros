@@ -11,5 +11,4 @@ typedef struct {
 } CloseOperation;
 
 PyObject *close_operation_create(PyObject *mod, PyObject *const *args, Py_ssize_t nargsf);
-
 PyTypeObject *close_operation_register(PyObject *mod);
