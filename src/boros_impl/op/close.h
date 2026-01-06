@@ -6,6 +6,7 @@
 #include "op/base.h"
 
 typedef struct {
+    /* fd is stored in base.scratch */
     Operation base;
 } CloseOperation;
 

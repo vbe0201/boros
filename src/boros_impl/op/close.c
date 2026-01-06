@@ -5,8 +5,7 @@
 
 #include <liburing.h>
 
-#include "bytesobject.h"
-#include "pyerrors.h"
+#include <Python.h>
 #include "util/python.h"
 #include "module.h"
 
@@ -47,7 +46,7 @@ PyObject *close_operation_create(PyObject *mod, PyObject *const *args, Py_ssize_
         return NULL;
     }
 
-    CloseOperation *op = (CloseOperation *)operation_alloc(state->CloseOperation_type);
+    CloseOperation *op = (CloseOperation *)operation_alloc(state->CloseOperation_type, state);
 
     if (op != NULL) {
         op->base.vtable  = &g_close_operation_vtable;
@@ -57,19 +56,7 @@ PyObject *close_operation_create(PyObject *mod, PyObject *const *args, Py_ssize_
     return (PyObject *)op;
 }
 
-static int close_traverse_impl(PyObject *self, visitproc visit, void *arg) {
-    Py_VISIT(Py_TYPE(self));
-
-    return operation_traverse(&((CloseOperation *)self)->base, visit, arg);
-}
-static int close_clear_impl(PyObject *self) {
-    
-    return operation_clear(&((CloseOperation *)self)->base);
-}
-
 static PyType_Slot g_close_operation_slots[] = {
-    {Py_tp_traverse, close_traverse_impl},
-    {Py_tp_clear, close_clear_impl},
     {0, NULL},
 };
 
@@ -77,7 +64,7 @@ static PyType_Spec g_close_operation_spec = {
     .name      = "_impl._CloseOperation",
     .basicsize = sizeof(CloseOperation),
     .itemsize  = 0,
-    .flags     = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_IMMUTABLETYPE,
+    .flags     = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_IMMUTABLETYPE,
     .slots     = g_close_operation_slots,
 };
 
