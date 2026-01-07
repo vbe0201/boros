@@ -9,6 +9,7 @@ boros_impl_sources = [
     'io/proactor.c',
 
     'op/base.c',
+    'op/cancel.c',
     'op/nop.c',
     'op/open.c',
     'op/socket.c',

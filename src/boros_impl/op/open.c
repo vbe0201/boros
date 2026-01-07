@@ -10,7 +10,8 @@
 #include "util/python.h"
 
 static void open_prepare(PyObject *self, struct io_uring_sqe *sqe) {
-    OpenOperation *op    = (OpenOperation *)self;
+    OpenOperation *op = (OpenOperation *)self;
+
     const char *pathname = PyBytes_AS_STRING(op->path);
     io_uring_prep_openat(sqe, AT_FDCWD, pathname, op->base.scratch, op->mode);
 }

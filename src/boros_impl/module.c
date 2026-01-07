@@ -13,6 +13,7 @@
 #include "op/read.h"
 #include "op/socket.h"
 #include "op/write.h"
+#include "op/cancel.h"
 #include "run.h"
 #include "task.h"
 
@@ -28,6 +29,7 @@ static int module_traverse(PyObject *mod, visitproc visit, void *arg) {
     Py_VISIT(state->ReadOperation_type);
     Py_VISIT(state->WriteOperation_type);
     Py_VISIT(state->CloseOperation_type);
+    Py_VISIT(state->CancelOperation_type);
     return 0;
 }
 
@@ -43,6 +45,7 @@ static int module_clear(PyObject *mod) {
     Py_CLEAR(state->ReadOperation_type);
     Py_CLEAR(state->WriteOperation_type);
     Py_CLEAR(state->CloseOperation_type);
+    Py_CLEAR(state->CancelOperation_type);
     return 0;
 }
 
@@ -107,6 +110,11 @@ static int module_exec(PyObject *mod) {
         return -1;
     }
 
+    state->CancelOperation_type = cancel_operation_register(mod);
+    if (state->CancelOperation_type == NULL) {
+        return -1;
+    }
+
     state->local_context = PyThread_tss_alloc();
     if (state->local_context == NULL) {
         return -1;
@@ -125,6 +133,8 @@ PyDoc_STRVAR(g_read_doc, "Asynchronous read(2) operation on the io_uring.");
 PyDoc_STRVAR(g_write_doc, "Asynchronous write(2) operation on the io_uring.");
 PyDoc_STRVAR(g_close_doc, "Asynchronous close(2) operation on the io_uring.");
 PyDoc_STRVAR(g_open_doc, "Asynchronous open(2) operation on the io_uring.");
+PyDoc_STRVAR(g_cancel_fd_doc, "Asynchronously cancels all operations on a fd.");
+PyDoc_STRVAR(g_cancel_op_doc, "Asynchronously cancels a specific operation.");
 
 PyDoc_STRVAR(g_run_doc, "Drives a given coroutine to completion.\n\n"
                         "This is the entrypoint to the boros runtime.");
@@ -139,6 +149,8 @@ static PyMethodDef g_module_methods[] = {
     {"read", (PyCFunction)read_operation_create, METH_FASTCALL, g_read_doc},
     {"write", (PyCFunction)write_operation_create, METH_FASTCALL, g_write_doc},
     {"close", (PyCFunction)close_operation_create, METH_FASTCALL, g_close_doc},
+    {"cancel_fd", (PyCFunction)cancel_operation_create_fd, METH_O, g_cancel_fd_doc},
+    {"cancel_op", (PyCFunction)cancel_operation_create_op, METH_O, g_cancel_op_doc},
     {NULL, NULL, 0, NULL},
 };
 #pragma GCC diagnostic pop

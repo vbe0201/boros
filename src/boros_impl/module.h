@@ -18,6 +18,7 @@ typedef struct _ImplState {
     PyTypeObject *ReadOperation_type;
     PyTypeObject *WriteOperation_type;
     PyTypeObject *CloseOperation_type;
+    PyTypeObject *CancelOperation_type;
 
     /* The thread-local runtime context. */
     Py_tss_t *local_context;

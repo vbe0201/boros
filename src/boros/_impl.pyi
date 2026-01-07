@@ -80,6 +80,16 @@ def open(
     ...
 
 
+def cancel_fd(fd: int) -> Awaitable[int]:
+    """Asynchronously cancels all operations on a fd."""
+    ...
+
+
+def cancel_op(op: Awaitable[Any]) -> Awaitable[int]:
+    """Asynchronously cancels a specific operation."""
+    ...
+
+
 def run(coro: Coroutine[Any, None, T], conf: RunConfig) -> T:
     """
     Drives a given coroutine to completion.
