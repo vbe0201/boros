@@ -17,6 +17,7 @@ boros_impl_sources = [
     'op/read.c',
     'op/write.c',
     'op/close.c',
+    'op/mkdir.c',
 
     'util/outcome.c',
     'util/python.c',
