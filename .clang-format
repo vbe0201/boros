@@ -47,9 +47,9 @@ SortIncludes: true
 IncludeCategories:
   - Regex: '^[<"]Python\.h[>"]$'
     Priority: 1
-  - Regex: '^"binding/python\.hpp"$'
+  - Regex: '^"util/python\.h"$'
     Priority: 2
-  - Regex: '^<(linux/.*|sys/.*|unistd)\.h>$'
+  - Regex: '^<(arpa/.*|linux/.*|netinet/.*|sys/.*|unistd)\.h>$'
     Priority: 4
   - Regex: '^<.*>$'
     Priority: 3

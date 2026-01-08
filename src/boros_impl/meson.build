@@ -19,6 +19,7 @@ boros_impl_sources = [
 
     'util/outcome.c',
     'util/python.c',
+    'util/sockaddr.c',
 ]
 
 py.extension_module(
