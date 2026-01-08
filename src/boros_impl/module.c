@@ -14,6 +14,8 @@
 #include "op/socket.h"
 #include "op/write.h"
 #include "op/cancel.h"
+#include "op/mkdir.h"
+#include "op/rename.h"
 #include "run.h"
 #include "task.h"
 
@@ -30,6 +32,8 @@ static int module_traverse(PyObject *mod, visitproc visit, void *arg) {
     Py_VISIT(state->WriteOperation_type);
     Py_VISIT(state->CloseOperation_type);
     Py_VISIT(state->CancelOperation_type);
+    Py_VISIT(state->MkdirOperation_type);
+    Py_VISIT(state->RenameOperation_type);
     return 0;
 }
 
@@ -46,6 +50,8 @@ static int module_clear(PyObject *mod) {
     Py_CLEAR(state->WriteOperation_type);
     Py_CLEAR(state->CloseOperation_type);
     Py_CLEAR(state->CancelOperation_type);
+    Py_CLEAR(state->MkdirOperation_type);
+    Py_CLEAR(state->RenameOperation_type);
     return 0;
 }
 
@@ -115,6 +121,16 @@ static int module_exec(PyObject *mod) {
         return -1;
     }
 
+    state->MkdirOperation_type = mkdir_operation_register(mod);
+    if (state->MkdirOperation_type == NULL) {
+        return -1;
+    }
+
+    state->RenameOperation_type = rename_operation_register(mod);
+    if (state->RenameOperation_type == NULL) {
+        return -1;
+    }
+
     state->local_context = PyThread_tss_alloc();
     if (state->local_context == NULL) {
         return -1;
@@ -135,6 +151,8 @@ PyDoc_STRVAR(g_close_doc, "Asynchronous close(2) operation on the io_uring.");
 PyDoc_STRVAR(g_open_doc, "Asynchronous open(2) operation on the io_uring.");
 PyDoc_STRVAR(g_cancel_fd_doc, "Asynchronously cancels all operations on a fd.");
 PyDoc_STRVAR(g_cancel_op_doc, "Asynchronously cancels a specific operation.");
+PyDoc_STRVAR(g_mkdir_doc, "Asynchronously mkdir(2) operation on the io_uring.");
+PyDoc_STRVAR(g_rename_doc, "Asynchronously rename(2) operation on the io_uring.");
 
 PyDoc_STRVAR(g_run_doc, "Drives a given coroutine to completion.\n\n"
                         "This is the entrypoint to the boros runtime.");
@@ -151,6 +169,8 @@ static PyMethodDef g_module_methods[] = {
     {"close", (PyCFunction)close_operation_create, METH_FASTCALL, g_close_doc},
     {"cancel_fd", (PyCFunction)cancel_operation_create_fd, METH_O, g_cancel_fd_doc},
     {"cancel_op", (PyCFunction)cancel_operation_create_op, METH_O, g_cancel_op_doc},
+    {"mkdir", (PyCFunction)mkdir_operation_create, METH_FASTCALL, g_mkdir_doc},
+    {"rename", (PyCFunction)rename_operation_create, METH_FASTCALL, g_rename_doc},
     {NULL, NULL, 0, NULL},
 };
 #pragma GCC diagnostic pop
