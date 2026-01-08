@@ -20,6 +20,7 @@ typedef struct _ImplState {
     PyTypeObject *CloseOperation_type;
     PyTypeObject *CancelOperation_type;
     PyTypeObject *MkdirOperation_type;
+    PyTypeObject *RenameOperation_type;
 
     /* The thread-local runtime context. */
     Py_tss_t *local_context;

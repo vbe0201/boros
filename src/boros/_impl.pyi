@@ -96,6 +96,13 @@ def mkdir(
     """Asynchronous mkdir(2) operation on the io_uring."""
     ...
 
+def rename(
+    oldpath: str | bytes | PathLike[str] | PathLike[bytes],
+    newpath: str | bytes | PathLike[str] | PathLike[bytes],
+) -> Awaitable[int]:
+    """Asynchronous rename(2) operation on the io_uring."""
+    ...
+
 
 def run(coro: Coroutine[Any, None, T], conf: RunConfig) -> T:
     """
