@@ -58,7 +58,7 @@ PyObject *cancel_operation_create_op(PyObject *mod, PyObject *arg) {
     ImplState *state = PyModule_GetState(mod);
 
     if (PyObject_TypeCheck(arg, state->Operation_type) == 0) {
-        PyErr_SetString(PyExc_TypeError, "Expected Operation object");
+        PyErr_Format(PyExc_TypeError, "Expected Operation object, not %.500s", Py_TYPE(arg)->tp_name);
         return NULL;
     }
 

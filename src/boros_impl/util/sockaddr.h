@@ -15,7 +15,7 @@
  * - AF_INET6: (host, port, flowinfo, scope_id) tuple
  * - AF_UNIX: path object for UNIX domain sockets
  */
-int parse_sockaddr(int af, PyObject *addrobj, struct sockaddr_storage *out, socklen_t *len);
+bool parse_sockaddr(int af, PyObject *addrobj, struct sockaddr_storage *out, socklen_t *len);
 
 /* Converts a sockaddr to a Python address object. */
 PyObject *format_sockaddr(const struct sockaddr *addr, socklen_t len);

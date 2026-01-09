@@ -10,16 +10,16 @@
 #include <sys/un.h>
 
 /* Helpers functions for parsing different address families from Python values. */
-static int parse_inet(PyObject *addrobj, struct sockaddr_storage *out, socklen_t *len);
-static int parse_inet6(PyObject *addrobj, struct sockaddr_storage *out, socklen_t *len);
-static int parse_unix(PyObject *addrobj, struct sockaddr_storage *out, socklen_t *len);
+static bool parse_inet(PyObject *addrobj, struct sockaddr_storage *out, socklen_t *len);
+static bool parse_inet6(PyObject *addrobj, struct sockaddr_storage *out, socklen_t *len);
+static bool parse_unix(PyObject *addrobj, struct sockaddr_storage *out, socklen_t *len);
 
 /* Helper functions for formatting different address families to Python values. */
 static PyObject *format_inet(const struct sockaddr *addr);
 static PyObject *format_inet6(const struct sockaddr *addr);
 static PyObject *format_unix(const struct sockaddr *addr, socklen_t len);
 
-int parse_sockaddr(int af, PyObject *addrobj, struct sockaddr_storage *out, socklen_t *len) {
+bool parse_sockaddr(int af, PyObject *addrobj, struct sockaddr_storage *out, socklen_t *len) {
     assert(addrobj != NULL && out != NULL && len != NULL);
 
     switch (af) {
@@ -32,7 +32,7 @@ int parse_sockaddr(int af, PyObject *addrobj, struct sockaddr_storage *out, sock
 
     default:
         PyErr_Format(PyExc_ValueError, "Unsupported address family: %d", af);
-        return -1;
+        return false;
     }
 }
 
@@ -91,11 +91,11 @@ static inline bool extract_port(PyObject *portobj, unsigned short *port) {
     return true;
 }
 
-static int parse_inet(PyObject *addrobj, struct sockaddr_storage *out, socklen_t *len) {
+static bool parse_inet(PyObject *addrobj, struct sockaddr_storage *out, socklen_t *len) {
     if (!PyTuple_Check(addrobj) || PyTuple_GET_SIZE(addrobj) != 2) {
         PyErr_Format(PyExc_TypeError, "AF_INET address must be a pair (host, port), not %.500s",
                      Py_TYPE(addrobj)->tp_name);
-        return -1;
+        return false;
     }
 
     PyObject *hostobj = PyTuple_GET_ITEM(addrobj, 0);
@@ -104,12 +104,12 @@ static int parse_inet(PyObject *addrobj, struct sockaddr_storage *out, socklen_t
     const void *host;
     size_t hostlen;
     if (!extract_hostaddr(hostobj, &host, &hostlen)) {
-        return -1;
+        return false;
     }
 
     unsigned short port;
     if (!extract_port(portobj, &port)) {
-        return -1;
+        return false;
     }
 
     struct sockaddr_in *sin = (struct sockaddr_in *)out;
@@ -117,20 +117,20 @@ static int parse_inet(PyObject *addrobj, struct sockaddr_storage *out, socklen_t
 
     if (inet_pton(AF_INET, host, &sin->sin_addr) != 1) {
         PyErr_Format(PyExc_ValueError, "invalid IPv4 address for AF_INET: %s", host);
-        return -1;
+        return false;
     }
     sin->sin_family = AF_INET;
     sin->sin_port   = htons(port);
 
     *len = sizeof(*sin);
-    return 0;
+    return true;
 }
 
-static int parse_inet6(PyObject *addrobj, struct sockaddr_storage *out, socklen_t *len) {
+static bool parse_inet6(PyObject *addrobj, struct sockaddr_storage *out, socklen_t *len) {
     if (!PyTuple_Check(addrobj) || PyTuple_GET_SIZE(addrobj) < 2 || PyTuple_GET_SIZE(addrobj) > 4) {
         PyErr_Format(PyExc_TypeError, "AF_INET6 address must be a tuple (host, port, flowinfo?, scope_id?), not %.500s",
                      Py_TYPE(addrobj)->tp_name);
-        return -1;
+        return false;
     }
 
     PyObject *hostobj = PyTuple_GET_ITEM(addrobj, 0);
@@ -139,22 +139,22 @@ static int parse_inet6(PyObject *addrobj, struct sockaddr_storage *out, socklen_
     const void *host;
     size_t hostlen;
     if (!extract_hostaddr(hostobj, &host, &hostlen)) {
-        return -1;
+        return false;
     }
 
     unsigned short port;
     if (!extract_port(portobj, &port)) {
-        return -1;
+        return false;
     }
 
     unsigned int flowinfo = 0;
     if (PyTuple_GET_SIZE(addrobj) > 2 && !python_parse_unsigned_int(&flowinfo, PyTuple_GET_ITEM(addrobj, 2))) {
-        return -1;
+        return false;
     }
 
     unsigned int scope_id = 0;
     if (PyTuple_GET_SIZE(addrobj) > 3 && !python_parse_unsigned_int(&scope_id, PyTuple_GET_ITEM(addrobj, 3))) {
-        return -1;
+        return false;
     }
 
     struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)out;
@@ -162,7 +162,7 @@ static int parse_inet6(PyObject *addrobj, struct sockaddr_storage *out, socklen_
 
     if (inet_pton(AF_INET6, host, &sin6->sin6_addr) != 1) {
         PyErr_Format(PyExc_ValueError, "invalid IPv6 address for AF_INET6: %s", host);
-        return -1;
+        return false;
     }
     sin6->sin6_family   = AF_INET6;
     sin6->sin6_port     = htons(port);
@@ -170,30 +170,38 @@ static int parse_inet6(PyObject *addrobj, struct sockaddr_storage *out, socklen_
     sin6->sin6_scope_id = htonl(scope_id);
 
     *len = sizeof(*sin6);
-    return 0;
+    return true;
 }
 
-static int parse_unix(PyObject *addrobj, struct sockaddr_storage *out, socklen_t *len) {
+static bool parse_unix(PyObject *addrobj, struct sockaddr_storage *out, socklen_t *len) {
+    /* Resolve path-like objects first. */
+    addrobj = PyOS_FSPath(addrobj);
+    if (addrobj == NULL) {
+        return false;
+    }
+
     /* Encode the addr using PEP 383 filesystem encoding, if applicable. */
     if (PyUnicode_Check(addrobj)) {
-        addrobj = PyUnicode_EncodeFSDefault(addrobj);
-        if (addrobj == NULL) {
-            return -1;
+        PyObject *encoded = PyUnicode_EncodeFSDefault(addrobj);
+        Py_DECREF(addrobj);
+
+        if (encoded == NULL) {
+            return false;
         }
-    } else {
-        Py_INCREF(addrobj);
+
+        addrobj = encoded;
     }
 
     /* Extract a raw buffer from the address. */
     Py_buffer pathbuf;
     if (PyObject_GetBuffer(addrobj, &pathbuf, 0) != 0) {
         Py_DECREF(addrobj);
-        return -1;
+        return false;
     }
 
     struct sockaddr_un *sun = (struct sockaddr_un *)out;
     memset(sun, 0, sizeof(*sun));
-    int res = -1;
+    bool res = false;
 
     /*
      * Abstract namespaces are a Linux extension where paths start with
@@ -211,7 +219,7 @@ static int parse_unix(PyObject *addrobj, struct sockaddr_storage *out, socklen_t
     memcpy(sun->sun_path, pathbuf.buf, pathbuf.len);
     *len = pathbuf.len + offsetof(struct sockaddr_un, sun_path) + null_terminated;
 
-    res = 0;
+    res = true;
 cleanup:
     PyBuffer_Release(&pathbuf);
     Py_DECREF(addrobj);

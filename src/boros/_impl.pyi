@@ -2,9 +2,17 @@
 
 from collections.abc import Awaitable, Coroutine
 from os import PathLike
-from typing import Any, TypeVar
+from socket import AddressFamily
+from typing import Any, Literal, TypeAlias, TypeVar, overload
 
-T = TypeVar("T")
+_RunT = TypeVar("RunT")
+
+_PathT: TypeAlias = str | bytes | PathLike[str] | PathLike[bytes]
+
+_HostIpT: TypeAlias = str | bytes | bytearray
+_SockAddrV4T: TypeAlias = tuple[_HostIpT, int]
+_SockAddrV6T: TypeAlias = tuple[_HostIpT, int] | tuple[_HostIpT, int, int] | tuple[_HostIpT, int, int, int]
+_SockAddrT: TypeAlias = _SockAddrV4T | _SockAddrV6T | _PathT
 
 
 class Task:
@@ -71,11 +79,7 @@ def close(fd: int) -> Awaitable[int]:
     ...
 
 
-def open(
-    path: str | bytes | PathLike[str] | PathLike[bytes],
-    flags: int,
-    mode: int,
-) -> Awaitable[int]:
+def open(path: _PathT, flags: int, mode: int) -> Awaitable[int]:
     """Asynchronous open(2) operation on the io_uring."""
     ...
 
@@ -90,7 +94,27 @@ def cancel_op(op: Awaitable[Any]) -> Awaitable[int]:
     ...
 
 
-def run(coro: Coroutine[Any, None, T], conf: RunConfig) -> T:
+@overload
+def connect(fd: int, af: Literal[AddressFamily.AF_INET], address: _SockAddrV4T) -> Awaitable[None]:
+    ...
+
+
+@overload
+def connect(fd: int, af: Literal[AddressFamily.AF_INET6], address: _SockAddrV6T) -> Awaitable[None]:
+    ...
+
+
+@overload
+def connect(fd: int, af: Literal[AddressFamily.AF_UNIX], address: _PathT) -> Awaitable[None]:
+    ...
+
+
+def connect(fd: int, af: int, address: _SockAddrT) -> Awaitable[None]:
+    """Asynchronous connect(2) operation on the io_uring."""
+    ...
+
+
+def run(coro: Coroutine[Any, None, _RunT], conf: RunConfig) -> _RunT:
     """
     Drives a given coroutine to completion.
 

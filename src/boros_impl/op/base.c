@@ -51,7 +51,7 @@ static PyObject *operation_await(PyObject *self) {
 
     /* Guard against attempts to build subclasses without a vtable. */
     if (op->vtable == NULL) {
-        PyErr_SetString(PyExc_TypeError, "Operation subclasses outside of boros._impl are unsupported");
+        PyErr_SetString(PyExc_TypeError, "Invalid Operation subclass detected");
         return NULL;
     }
 
