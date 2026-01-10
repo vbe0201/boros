@@ -47,6 +47,7 @@
           packages = with pkgs; [
             clang-tools
             cmake
+            just
             liburing
             meson
             ninja

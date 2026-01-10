@@ -22,36 +22,30 @@ a documentation hint to the required kernel version. Attempting to use any
 library features with an outdated kernel will also result in exceptions
 being raised.
 
-## Hacking
+## Development
 
-If you want to work on boros directly, it is recommended to set up a development
-environment with [Meson](https://mesonbuild.com/), [Python 3.12+](https://www.python.org/),
-and [uv](https://github.com/astral-sh/uv). If you use [Nix](https://nixos.org/),
-a flake with a development shell and a `boros` package output is provided.
+It is recommended to set up a developemnt environment with [Meson](https://mesonbuild.com),
+[Python 3.12+](https://www.python.org), and [uv](https://docs.astral.sh/uv).
 
-If you want [clangd](https://clangd.llvm.org/) language server support for the
-C++ portions of the codebase, run the following command from the project root:
+[just](https://github.com/casey/just) is used as a command runner for
+convenience, it is recommended but not strictly required.
 
-```shell
-meson setup build
-```
+### Quick Start
 
-This will create the Meson build cache with a `compile_commands.json` file in
-the `build/` directory, which is where clangd searches for it by default.
+Create a virtual environment for development and install a debug build
+of boros to it:
 
-Next, you will want a virtual environment for development:
-
-```sh
+```bash
 uv venv
-source .venv/bin/activate
+
+# Defaults to debug builds unless the BOROS_BUILD_MODE
+# environment variable is set to release.
+just sync
 ```
 
-To reinstall the `boros` library to your venv when you want to test a change,
-run the following command:
-
-```sh
-uv sync --reinstall-package boros
-```
+And you should be all set! Use commands like `just lint`, `just format`,
+`just ty` to assist your development workflow and use `just run` as a
+wrapper to `uv run` which preserves the current build configuration.
 
 ## License
 

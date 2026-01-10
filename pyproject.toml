@@ -25,15 +25,20 @@ requires = ["meson-python"]
 build-backend = "mesonpy"
 
 [tool.meson-python.args]
-# Since pyproject always does release builds, we want to enable LTO.
-setup = ["-Db_lto=true"]
+setup = ["-Db_lto=true", "-Dliburing_source=bundled"]
+install = ["--skip-subprojects"]
 
 [dependency-groups]
 dev = [
     "pytest>=9.0.1",
+    "ruff>=0.14.11",
+    "ty>=0.0.11",
 ]
 docs = [
     "sphinx>=9.0.0",
     "sphinx-codeautolink>=0.17.5",
     "sphinx-copybutton>=0.5.2",
 ]
+
+[tool.uv]
+environments = ["sys_platform == 'linux'"]

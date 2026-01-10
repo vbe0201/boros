@@ -5,7 +5,7 @@ from os import PathLike
 from socket import AddressFamily
 from typing import Any, Literal, TypeAlias, TypeVar, overload
 
-_RunT = TypeVar("RunT")
+_RunT = TypeVar("_RunT")
 
 _PathT: TypeAlias = str | bytes | PathLike[str] | PathLike[bytes]
 

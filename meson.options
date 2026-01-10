@@ -1,0 +1,7 @@
+option(
+    'liburing_source',
+    type: 'combo',
+    choices: ['auto', 'system', 'bundled'],
+    value: 'auto',
+    description: 'Source of liburing dependency. auto tries system and uses bundled as fallback'
+)
