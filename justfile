@@ -74,26 +74,26 @@ update *args:
 tree *args:
   uv tree {{args}}
 
-# Builds a distribution of the project
+# Build a distribution of the project
 build *args:
   rm -rf dist/
   uv build \
     --config-settings=build-dir={{build_base}}.release \
     {{args}}
 
-# Publishes a release to PyPI
+# Publish a release to PyPI
 publish *args:
   uv publish {{args}}
 
-# Simulates a release on TestPyPI
+# Simulate a release on TestPyPI
 publish-test *args: (publish "--index-url" "https://test.pypi.org/simple/" args)
 
-# Cleans up build files
+# Clean up build files
 clean:
   rm -rf {{build_base}}.* dist/ *.egg-info/
 
-# Runs tests on a debug build
+# Run tests on a debug build
 debug *args: (sync "debug") (test args)
 
-# Runs tests on a debug build with ASan enabled
+# Run tests on a debug build with ASan enabled
 asan *args: (sync "debug-asan") (test args)

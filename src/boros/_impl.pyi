@@ -47,9 +47,9 @@ class RunConfig:
     """
 
     #: The capacity of the io_uring submission queue.
-    sq_entries: int
+    sq_size: int
     #: The capacity of the io_uring completion queue.
-    cq_entries: int
+    cq_size: int
     #: The fd of an existing io_uring instance whose work queue should be shared.
     wqfd: int
 
