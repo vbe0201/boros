@@ -161,8 +161,8 @@ PyDoc_STRVAR(g_openat_doc, "Asynchronous openat(2) operation on the io_uring.");
 PyDoc_STRVAR(g_cancel_fd_doc, "Asynchronously cancels all operations on a fd.");
 PyDoc_STRVAR(g_cancel_op_doc, "Asynchronously cancels a specific operation.");
 PyDoc_STRVAR(g_connect_doc, "Asynchronous connect(2) operation on the io_uring.");
-PyDoc_STRVAR(g_mkdir_doc, "Asynchronously mkdir(2) operation on the io_uring.");
-PyDoc_STRVAR(g_rename_doc, "Asynchronously rename(2) operation on the io_uring.");
+PyDoc_STRVAR(g_mkdir_doc, "Asynchronous mkdir(2) operation on the io_uring.");
+PyDoc_STRVAR(g_rename_doc, "Asynchronous rename(2) operation on the io_uring.");
 
 PyDoc_STRVAR(g_run_doc, "Drives a given coroutine to completion.\n\n"
                         "This is the entrypoint to the boros runtime.");
