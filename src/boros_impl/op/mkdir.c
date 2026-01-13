@@ -12,7 +12,7 @@ static void mkdir_prepare(PyObject *self, struct io_uring_sqe *sqe) {
     MkdirOperation *op = (MkdirOperation *)self;
 
     const char *pathname = PyBytes_AS_STRING(op->path);
-    io_uring_prep_mkdir(sqe, pathname, op->mode);
+    io_uring_prep_mkdir(sqe, pathname, op->base.scratch);
 }
 
 static void mkdir_complete(PyObject *self, struct io_uring_cqe *cqe) {
@@ -54,7 +54,7 @@ PyObject *mkdir_operation_create(PyObject *mod, PyObject *const *args, Py_ssize_
     if (op != NULL) {
         op->base.vtable  = &g_mkdir_operation_vtable;
         op->path         = path;
-        op->mode         = mode;
+        op->base.scratch = mode;
     } else {
         Py_DECREF(path);
     }
