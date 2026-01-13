@@ -94,15 +94,15 @@ def cancel_op(op: Awaitable[Any]) -> Awaitable[int]:
     ...
 
 def mkdir(
-    path: str | bytes | PathLike[str] | PathLike[bytes],
+    path: _PathT,
     mode: int,
 ) -> Awaitable[int]:
     """Asynchronous mkdir(2) operation on the io_uring."""
     ...
 
 def rename(
-    oldpath: str | bytes | PathLike[str] | PathLike[bytes],
-    newpath: str | bytes | PathLike[str] | PathLike[bytes],
+    oldpath: _PathT,
+    newpath: _PathT,
 ) -> Awaitable[int]:
     """Asynchronous rename(2) operation on the io_uring."""
     ...
