@@ -7,7 +7,6 @@
 #include <stddef.h>
 
 #include "module.h"
-#include "util/python.h"
 
 static inline void task_link_init(TaskLink *self) {
     self->prev = self;
@@ -115,8 +114,14 @@ PyDoc_STRVAR(g_task_doc, "A lightweight, concurrent thread of execution.\n\n"
 PyDoc_STRVAR(g_task_name_doc, "A string representation of the task name.");
 PyDoc_STRVAR(g_task_coro_doc, "The coroutine object associated with the task.");
 
+static PyObject *task_repr(PyObject *self) {
+    Task *task = (Task *)self;
+    return PyUnicode_FromFormat("<Task %R at %p>", task->name, task);
+}
+
 static int task_traverse(PyObject *self, visitproc visit, void *arg) {
     Task *task = (Task *)self;
+
     Py_VISIT(Py_TYPE(self));
     Py_VISIT(task->name);
     Py_VISIT(task->coro);
@@ -125,6 +130,7 @@ static int task_traverse(PyObject *self, visitproc visit, void *arg) {
 
 static int task_clear(PyObject *self) {
     Task *task = (Task *)self;
+
     Py_CLEAR(task->name);
     Py_CLEAR(task->coro);
     return 0;
@@ -149,9 +155,10 @@ static PyGetSetDef g_task_properties[] = {
 };
 
 // clang-format off
-// TODO: repr, await frames stackwalking, contextvars
+// TODO: await frames stackwalking, contextvars
 static PyType_Slot g_task_slots[] = {
     {Py_tp_doc, (void *)g_task_doc},
+    {Py_tp_repr, task_repr},
     {Py_tp_dealloc, python_tp_dealloc},
     {Py_tp_traverse, task_traverse},
     {Py_tp_clear, task_clear},

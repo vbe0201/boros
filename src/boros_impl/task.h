@@ -3,8 +3,7 @@
 
 #pragma once
 
-#define PY_SSIZE_T_CLEAN
-#include <Python.h>
+#include "util/python.h"
 
 /* An intrusive list link embedded into Task. */
 typedef struct _TaskLink {
