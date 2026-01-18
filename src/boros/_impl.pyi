@@ -93,6 +93,20 @@ def cancel_op(op: Awaitable[Any]) -> Awaitable[int]:
     """Asynchronously cancels a specific operation."""
     ...
 
+def mkdir(
+    path: _PathT,
+    mode: int,
+) -> Awaitable[None]:
+    """Asynchronous mkdir(2) operation on the io_uring."""
+    ...
+
+def rename(
+    oldpath: _PathT,
+    newpath: _PathT,
+) -> Awaitable[None]:
+    """Asynchronous rename(2) operation on the io_uring."""
+    ...
+
 
 @overload
 def connect(fd: int, af: Literal[AddressFamily.AF_INET], address: _SockAddrV4T) -> Awaitable[None]:
