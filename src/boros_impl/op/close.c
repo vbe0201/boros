@@ -38,7 +38,7 @@ PyObject *close_operation_create(PyObject *mod, PyObject *const *args, Py_ssize_
         return NULL;
     }
 
-    int fd = 0;
+    int fd;
     if (!python_parse_int(&fd, args[0])) {
         return NULL;
     }

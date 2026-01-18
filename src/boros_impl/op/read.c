@@ -41,17 +41,17 @@ PyObject *read_operation_create(PyObject *mod, PyObject *const *args, Py_ssize_t
         return NULL;
     }
 
-    int fd = 0;
+    int fd;
     if (!python_parse_int(&fd, args[0])) {
         return NULL;
     }
 
-    unsigned int nbytes = 0;
+    unsigned int nbytes;
     if (!python_parse_unsigned_int(&nbytes, args[1])) {
         return NULL;
     }
 
-    unsigned long long offset = 0;
+    unsigned long long offset;
     if (!python_parse_unsigned_long_long(&offset, args[2])) {
         return NULL;
     }

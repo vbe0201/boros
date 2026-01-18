@@ -79,8 +79,8 @@ def close(fd: int) -> Awaitable[int]:
     ...
 
 
-def open(path: _PathT, flags: int, mode: int) -> Awaitable[int]:
-    """Asynchronous open(2) operation on the io_uring."""
+def openat(dfd: int | None, path: _PathT, flags: int, mode: int) -> Awaitable[int]:
+    """Asynchronous openat(2) operation on the io_uring."""
     ...
 
 

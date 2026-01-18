@@ -41,7 +41,7 @@ PyObject *write_operation_create(PyObject *mod, PyObject *const *args, Py_ssize_
         return NULL;
     }
 
-    int fd = 0;
+    int fd;
     if (!python_parse_int(&fd, args[0])) {
         return NULL;
     }
@@ -52,7 +52,7 @@ PyObject *write_operation_create(PyObject *mod, PyObject *const *args, Py_ssize_
         return NULL;
     }
 
-    unsigned long long offset = 0;
+    unsigned long long offset;
     if (!python_parse_unsigned_long_long(&offset, args[2])) {
         return NULL;
     }

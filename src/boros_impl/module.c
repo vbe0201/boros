@@ -26,7 +26,7 @@ static int module_traverse(PyObject *mod, visitproc visit, void *arg) {
     Py_VISIT(state->OperationWaiter_type);
     Py_VISIT(state->NopOperation_type);
     Py_VISIT(state->SocketOperation_type);
-    Py_VISIT(state->OpenOperation_type);
+    Py_VISIT(state->OpenAtOperation_type);
     Py_VISIT(state->ReadOperation_type);
     Py_VISIT(state->WriteOperation_type);
     Py_VISIT(state->CloseOperation_type);
@@ -43,7 +43,7 @@ static int module_clear(PyObject *mod) {
     Py_CLEAR(state->OperationWaiter_type);
     Py_CLEAR(state->NopOperation_type);
     Py_CLEAR(state->SocketOperation_type);
-    Py_CLEAR(state->OpenOperation_type);
+    Py_CLEAR(state->OpenAtOperation_type);
     Py_CLEAR(state->ReadOperation_type);
     Py_CLEAR(state->WriteOperation_type);
     Py_CLEAR(state->CloseOperation_type);
@@ -93,8 +93,8 @@ static int module_exec(PyObject *mod) {
         return -1;
     }
 
-    state->OpenOperation_type = open_operation_register(mod);
-    if (state->OpenOperation_type == NULL) {
+    state->OpenAtOperation_type = openat_operation_register(mod);
+    if (state->OpenAtOperation_type == NULL) {
         return -1;
     }
 
@@ -140,7 +140,7 @@ PyDoc_STRVAR(g_socket_doc, "Asynchronous socket(2) operation on the io_uring.");
 PyDoc_STRVAR(g_read_doc, "Asynchronous read(2) operation on the io_uring.");
 PyDoc_STRVAR(g_write_doc, "Asynchronous write(2) operation on the io_uring.");
 PyDoc_STRVAR(g_close_doc, "Asynchronous close(2) operation on the io_uring.");
-PyDoc_STRVAR(g_open_doc, "Asynchronous open(2) operation on the io_uring.");
+PyDoc_STRVAR(g_openat_doc, "Asynchronous openat(2) operation on the io_uring.");
 PyDoc_STRVAR(g_cancel_fd_doc, "Asynchronously cancels all operations on a fd.");
 PyDoc_STRVAR(g_cancel_op_doc, "Asynchronously cancels a specific operation.");
 PyDoc_STRVAR(g_connect_doc, "Asynchronous connect(2) operation on the io_uring.");
@@ -154,7 +154,7 @@ static PyMethodDef g_module_methods[] = {
     {"nop", (PyCFunction)nop_operation_create, METH_O, g_nop_doc},
     {"socket", (PyCFunction)socket_operation_create, METH_FASTCALL, g_socket_doc},
     {"run", (PyCFunction)boros_run, METH_FASTCALL, g_run_doc},
-    {"open", (PyCFunction)open_operation_create, METH_FASTCALL, g_open_doc},
+    {"openat", (PyCFunction)openat_operation_create, METH_FASTCALL, g_openat_doc},
     {"read", (PyCFunction)read_operation_create, METH_FASTCALL, g_read_doc},
     {"write", (PyCFunction)write_operation_create, METH_FASTCALL, g_write_doc},
     {"close", (PyCFunction)close_operation_create, METH_FASTCALL, g_close_doc},
