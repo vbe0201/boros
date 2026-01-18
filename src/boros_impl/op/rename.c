@@ -22,7 +22,8 @@ static void rename_complete(PyObject *self, struct io_uring_cqe *cqe) {
         errno = -cqe->res;
         outcome_capture_errno(&(op->base.outcome));
     } else {
-        outcome_capture(&(op->base.outcome), PyLong_FromLong(cqe->res));
+        assert(cqe->res == 0);
+        outcome_capture(&(op->base.outcome), Py_None);
     }
 }
 
