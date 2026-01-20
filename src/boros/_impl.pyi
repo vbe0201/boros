@@ -107,6 +107,12 @@ def rename(
     """Asynchronous rename(2) operation on the io_uring."""
     ...
 
+def fsync(
+    fd: int,
+    flags: int,
+) ->Awaitable[int]:
+    """Asynchronous fsync(2) operation on the io_uring."""
+    ...
 
 @overload
 def connect(fd: int, af: Literal[AddressFamily.AF_INET], address: _SockAddrV4T) -> Awaitable[None]:
