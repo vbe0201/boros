@@ -110,8 +110,18 @@ def rename(
 def fsync(
     fd: int,
     flags: int,
-) ->Awaitable[int]:
+) -> Awaitable[int]:
     """Asynchronous fsync(2) operation on the io_uring."""
+    ...
+
+def linkat(
+    olddirfd: int,
+    oldpath: _PathT,
+    newdirfd: int,
+    newpath: _PathT,
+    flags: int,
+) -> Awaitable[int]:
+    """Asynchronous linkat(2) operation on the io_uring."""
     ...
 
 @overload

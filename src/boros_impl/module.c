@@ -6,11 +6,13 @@
 #include <assert.h>
 
 #include "context/run_config.h"
+#include "methodobject.h"
 #include "objimpl.h"
 #include "op/base.h"
 #include "op/cancel.h"
 #include "op/close.h"
 #include "op/connect.h"
+#include "op/linkat.h"
 #include "op/nop.h"
 #include "op/open.h"
 #include "op/read.h"
@@ -20,6 +22,7 @@
 #include "op/mkdir.h"
 #include "op/rename.h"
 #include "op/fsync.h"
+#include "pymacro.h"
 #include "run.h"
 #include "task.h"
 
@@ -40,6 +43,7 @@ static int module_traverse(PyObject *mod, visitproc visit, void *arg) {
     Py_VISIT(state->MkdirOperation_type);
     Py_VISIT(state->RenameOperation_type);
     Py_VISIT(state->FsyncOperation_type);
+    Py_VISIT(state->LinkAtOperation_type);
     return 0;
 }
 
@@ -60,6 +64,7 @@ static int module_clear(PyObject *mod) {
     Py_CLEAR(state->MkdirOperation_type);
     Py_CLEAR(state->RenameOperation_type);
     Py_CLEAR(state->FsyncOperation_type);
+    Py_CLEAR(state->LinkAtOperation_type);
     return 0;
 }
 
@@ -149,6 +154,11 @@ static int module_exec(PyObject *mod) {
         return -1;
     }
 
+    state->LinkAtOperation_type = linkat_operation_register(mod);
+    if (state->LinkAtOperation_type == NULL) {
+        return -1;
+    }
+
     state->local_context = PyThread_tss_alloc();
     if (state->local_context == NULL) {
         return -1;
@@ -173,6 +183,7 @@ PyDoc_STRVAR(g_connect_doc, "Asynchronous connect(2) operation on the io_uring."
 PyDoc_STRVAR(g_mkdir_doc, "Asynchronous mkdir(2) operation on the io_uring.");
 PyDoc_STRVAR(g_rename_doc, "Asynchronous rename(2) operation on the io_uring.");
 PyDoc_STRVAR(g_fsync_doc, "Asynchronous fsync(2) operation on the io_uring.");
+PyDoc_STRVAR(g_linkat_doc, "Asynchronous linkat(2) operationg on the io_uring.");
 
 PyDoc_STRVAR(g_run_doc, "Drives a given coroutine to completion.\n\n"
                         "This is the entrypoint to the boros runtime.");
@@ -193,6 +204,7 @@ static PyMethodDef g_module_methods[] = {
     {"mkdir", (PyCFunction)mkdir_operation_create, METH_FASTCALL, g_mkdir_doc},
     {"rename", (PyCFunction)rename_operation_create, METH_FASTCALL, g_rename_doc},
     {"fsync", (PyCFunction)fsync_operation_create, METH_FASTCALL, g_fsync_doc},
+    {"linkat", (PyCFunction)linkat_operation_create, METH_FASTCALL, g_linkat_doc},
     {NULL, NULL, 0, NULL},
 };
 #pragma GCC diagnostic pop
