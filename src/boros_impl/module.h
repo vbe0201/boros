@@ -25,6 +25,7 @@ typedef struct _ImplState {
     PyTypeObject *RenameOperation_type;
     PyTypeObject *FsyncOperation_type;
     PyTypeObject *LinkAtOperation_type;
+    PyTypeObject *UnlinkAtOperation_type;
 
     /* The thread-local runtime context. */
     Py_tss_t *local_context;

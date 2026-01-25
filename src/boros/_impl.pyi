@@ -114,6 +114,13 @@ def linkat(
     """Asynchronous linkat(2) operation on the io_uring."""
     ...
 
+def unlinkat(
+    dirfd: int | None,
+    path: _PathT,
+    flags: int,
+) -> Awaitable[None]:
+    """Asynchronous unlinkat(2) operation on the io_uring."""
+
 @overload
 def connect(fd: int, af: Literal[AddressFamily.AF_INET], address: _SockAddrV4T) -> Awaitable[None]:
     ...

@@ -21,6 +21,7 @@ boros_impl_sources = [
     'op/rename.c',
     'op/fsync.c',
     'op/linkat.c',
+    'op/unlinkat.c',
 
     'util/outcome.c',
     'util/python.c',
