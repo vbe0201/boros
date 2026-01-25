@@ -83,7 +83,8 @@ def cancel_op(op: Awaitable[Any]) -> Awaitable[int]:
     """Asynchronously cancels a specific operation."""
     ...
 
-def mkdir(
+def mkdirat(
+    dfd: int,
     path: _PathT,
     mode: int,
 ) -> Awaitable[None]:
