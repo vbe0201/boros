@@ -120,6 +120,14 @@ def unlinkat(
     flags: int,
 ) -> Awaitable[None]:
     """Asynchronous unlinkat(2) operation on the io_uring."""
+    ...
+
+def symlinkat(
+    target: _PathT,
+    newdirfd: int | None,
+    linkpath: _PathT,
+) -> Awaitable[None]:
+    """Asynchronous symlinkat(2) operation on the io_uring."""
 
 @overload
 def connect(fd: int, af: Literal[AddressFamily.AF_INET], address: _SockAddrV4T) -> Awaitable[None]:

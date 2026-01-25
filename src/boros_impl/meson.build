@@ -22,6 +22,7 @@ boros_impl_sources = [
     'op/fsync.c',
     'op/linkat.c',
     'op/unlinkat.c',
+    'op/symlinkat.c',
 
     'util/outcome.c',
     'util/python.c',
