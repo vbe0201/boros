@@ -91,9 +91,12 @@ def mkdirat(
     """Asynchronous mkdir(2) operation on the io_uring."""
     ...
 
-def rename(
+def renameat(
+    olddfd: int,
     oldpath: _PathT,
+    newdfd: int,
     newpath: _PathT,
+    flags: int,
 ) -> Awaitable[None]:
     """Asynchronous rename(2) operation on the io_uring."""
     ...

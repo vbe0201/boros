@@ -22,7 +22,7 @@ typedef struct _ImplState {
     PyTypeObject *CancelOperation_type;
     PyTypeObject *ConnectOperation_type;
     PyTypeObject *MkdirAtOperation_type;
-    PyTypeObject *RenameOperation_type;
+    PyTypeObject *RenameAtOperation_type;
     PyTypeObject *FsyncOperation_type;
     PyTypeObject *LinkAtOperation_type;
     PyTypeObject *UnlinkAtOperation_type;
