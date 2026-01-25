@@ -16,7 +16,14 @@ static void fsync_prepare(PyObject *self, struct io_uring_sqe *sqe) {
 
 static void fsync_complete(PyObject *self, struct io_uring_cqe *cqe) {
     FsyncOperation *op = (FsyncOperation *)self;
-    outcome_capture(&op->base.outcome, PyLong_FromLong(cqe->res));
+
+    if (cqe->res < 0) {
+        errno = -cqe->res;
+        outcome_capture_errno(&(op->base.outcome));
+    } else {
+        assert(cqe->res == 0);
+        outcome_capture(&(op->base.outcome), Py_None);
+    }
 }
 
 static OperationVTable g_fsync_operation_vtable = {
@@ -57,7 +64,7 @@ static PyType_Slot g_fsync_operation_slots[] = {
     {0, NULL},
 };
 
-static PyType_Spec g_nop_operation_spec = {
+static PyType_Spec g_fsync_operation_spec = {
     .name      = "_impl._FsyncOperation",
     .basicsize = sizeof(FsyncOperation),
     .itemsize  = 0,

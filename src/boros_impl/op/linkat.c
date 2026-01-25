@@ -19,7 +19,14 @@ static void linkat_prepare(PyObject *self, struct io_uring_sqe *sqe) {
 
 static void linkat_complete(PyObject *self, struct io_uring_cqe *cqe) {
     LinkAtOperation *op = (LinkAtOperation *)self;
-    outcome_capture(&op->base.outcome, PyLong_FromLong(cqe->res));
+    
+    if (cqe->res < 0) {
+        errno = -cqe->res;
+        outcome_capture_errno(&(op->base.outcome));
+    } else {
+        assert(cqe->res == 0);
+        outcome_capture(&(op->base.outcome), Py_None);
+    }
 }
 
 static OperationVTable g_linkat_operation_vtable = {
@@ -37,7 +44,9 @@ PyObject *linkat_operation_create(PyObject *mod, PyObject *const *args, Py_ssize
     }
 
     int olddirfd;
-    if (!python_parse_int(&olddirfd, args[0])) {
+    if (args[0] == Py_None) {
+        olddirfd = AT_FDCWD;
+    } else if (!python_parse_int(&olddirfd, args[0])) {
         return NULL;
     }
 
@@ -47,7 +56,9 @@ PyObject *linkat_operation_create(PyObject *mod, PyObject *const *args, Py_ssize
     }
 
     int newdirfd;
-    if (!python_parse_int(&newdirfd, args[2])) {
+    if (args[0] == Py_None) {
+        newdirfd = AT_FDCWD;
+    } else if (!python_parse_int(&newdirfd, args[2])) {
         return NULL;
     }
 
@@ -101,15 +112,15 @@ static PyType_Slot g_linkat_operation_slots[] = {
     {0, NULL},
 };
 
-static PyType_Spec g_nop_operation_spec = {
-    .name      = "_impl._FsyncOperation",
+static PyType_Spec g_linkat_operation_spec = {
+    .name      = "_impl._LinkAtOperation",
     .basicsize = sizeof(LinkAtOperation),
     .itemsize  = 0,
     .flags     = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_IMMUTABLETYPE | Py_TPFLAGS_HAVE_GC,
     .slots     = g_linkat_operation_slots,
 };
 
-PyTypeObject *fsync_operation_register(PyObject *mod) {
+PyTypeObject *linkat_operation_register(PyObject *mod) {
     ImplState *state = PyModule_GetState(mod);
     return (PyTypeObject *)PyType_FromModuleAndSpec(mod, &g_linkat_operation_spec, (PyObject *)state->Operation_type);
 }
