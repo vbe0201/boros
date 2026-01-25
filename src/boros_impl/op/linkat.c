@@ -12,7 +12,6 @@
 static void linkat_prepare(PyObject *self, struct io_uring_sqe *sqe) {
     LinkAtOperation *op = (LinkAtOperation *)self;
 
-
     const char *oldpath = PyBytes_AS_STRING(op->oldpath);
     const char *newpath = PyBytes_AS_STRING(op->newpath);
     io_uring_prep_linkat(sqe, op->olddirfd, oldpath, op->newdirfd, newpath, op->base.scratch);
