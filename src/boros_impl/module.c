@@ -6,10 +6,13 @@
 #include <assert.h>
 
 #include "context/run_config.h"
+#include "methodobject.h"
+#include "objimpl.h"
 #include "op/base.h"
 #include "op/cancel.h"
 #include "op/close.h"
 #include "op/connect.h"
+#include "op/linkat.h"
 #include "op/nop.h"
 #include "op/open.h"
 #include "op/read.h"
@@ -18,6 +21,10 @@
 #include "op/cancel.h"
 #include "op/mkdir.h"
 #include "op/rename.h"
+#include "op/fsync.h"
+#include "op/unlinkat.h"
+#include "op/symlinkat.h"
+#include "pymacro.h"
 #include "run.h"
 #include "task.h"
 
@@ -35,8 +42,12 @@ static int module_traverse(PyObject *mod, visitproc visit, void *arg) {
     Py_VISIT(state->CloseOperation_type);
     Py_VISIT(state->CancelOperation_type);
     Py_VISIT(state->ConnectOperation_type);
-    Py_VISIT(state->MkdirOperation_type);
-    Py_VISIT(state->RenameOperation_type);
+    Py_VISIT(state->MkdirAtOperation_type);
+    Py_VISIT(state->RenameAtOperation_type);
+    Py_VISIT(state->FsyncOperation_type);
+    Py_VISIT(state->LinkAtOperation_type);
+    Py_VISIT(state->UnlinkAtOperation_type);
+    Py_VISIT(state->SymlinkAtOperation_type);
     return 0;
 }
 
@@ -54,8 +65,12 @@ static int module_clear(PyObject *mod) {
     Py_CLEAR(state->CloseOperation_type);
     Py_CLEAR(state->CancelOperation_type);
     Py_CLEAR(state->ConnectOperation_type);
-    Py_CLEAR(state->MkdirOperation_type);
-    Py_CLEAR(state->RenameOperation_type);
+    Py_CLEAR(state->MkdirAtOperation_type);
+    Py_CLEAR(state->RenameAtOperation_type);
+    Py_CLEAR(state->FsyncOperation_type);
+    Py_CLEAR(state->LinkAtOperation_type);
+    Py_CLEAR(state->UnlinkAtOperation_type);
+    Py_CLEAR(state->SymlinkAtOperation_type);
     return 0;
 }
 
@@ -130,13 +145,33 @@ static int module_exec(PyObject *mod) {
         return -1;
     }
 
-    state->MkdirOperation_type = mkdir_operation_register(mod);
-    if (state->MkdirOperation_type == NULL) {
+    state->MkdirAtOperation_type = mkdirat_operation_register(mod);
+    if (state->MkdirAtOperation_type == NULL) {
         return -1;
     }
 
-    state->RenameOperation_type = rename_operation_register(mod);
-    if (state->RenameOperation_type == NULL) {
+    state->RenameAtOperation_type = renameat_operation_register(mod);
+    if (state->RenameAtOperation_type == NULL) {
+        return -1;
+    }
+
+    state->FsyncOperation_type = fsync_operation_register(mod);
+    if (state->FsyncOperation_type == NULL) {
+        return -1;
+    }
+
+    state->LinkAtOperation_type = linkat_operation_register(mod);
+    if (state->LinkAtOperation_type == NULL) {
+        return -1;
+    }
+
+    state->UnlinkAtOperation_type = unlinkat_operation_register(mod);
+    if (state->UnlinkAtOperation_type == NULL) {
+        return -1;
+    }
+
+    state->SymlinkAtOperation_type = symlinkat_operation_register(mod);
+    if (state->SymlinkAtOperation_type == NULL) {
         return -1;
     }
 
@@ -161,8 +196,12 @@ PyDoc_STRVAR(g_openat_doc, "Asynchronous openat(2) operation on the io_uring.");
 PyDoc_STRVAR(g_cancel_fd_doc, "Asynchronously cancels all operations on a fd.");
 PyDoc_STRVAR(g_cancel_op_doc, "Asynchronously cancels a specific operation.");
 PyDoc_STRVAR(g_connect_doc, "Asynchronous connect(2) operation on the io_uring.");
-PyDoc_STRVAR(g_mkdir_doc, "Asynchronous mkdir(2) operation on the io_uring.");
-PyDoc_STRVAR(g_rename_doc, "Asynchronous rename(2) operation on the io_uring.");
+PyDoc_STRVAR(g_mkdirat_doc, "Asynchronous mkdirat(2) operation on the io_uring.");
+PyDoc_STRVAR(g_renameat_doc, "Asynchronous renameat(2) operation on the io_uring.");
+PyDoc_STRVAR(g_fsync_doc, "Asynchronous fsync(2) operation on the io_uring.");
+PyDoc_STRVAR(g_linkat_doc, "Asynchronous linkat(2) operationg on the io_uring.");
+PyDoc_STRVAR(g_unlinkat_doc, "Asynchronous unlinkat(2) operationg on the io_uring.");
+PyDoc_STRVAR(g_symlinkat_doc, "Asynchronous symlinkat(2) operationg on the io_uring.");
 
 PyDoc_STRVAR(g_run_doc, "Drives a given coroutine to completion.\n\n"
                         "This is the entrypoint to the boros runtime.");
@@ -180,8 +219,12 @@ static PyMethodDef g_module_methods[] = {
     {"cancel_fd", (PyCFunction)cancel_operation_create_fd, METH_O, g_cancel_fd_doc},
     {"cancel_op", (PyCFunction)cancel_operation_create_op, METH_O, g_cancel_op_doc},
     {"connect", (PyCFunction)connect_operation_create, METH_FASTCALL, g_connect_doc},
-    {"mkdir", (PyCFunction)mkdir_operation_create, METH_FASTCALL, g_mkdir_doc},
-    {"rename", (PyCFunction)rename_operation_create, METH_FASTCALL, g_rename_doc},
+    {"mkdirat", (PyCFunction)mkdirat_operation_create, METH_FASTCALL, g_mkdirat_doc},
+    {"renameat", (PyCFunction)renameat_operation_create, METH_FASTCALL, g_renameat_doc},
+    {"fsync", (PyCFunction)fsync_operation_create, METH_FASTCALL, g_fsync_doc},
+    {"linkat", (PyCFunction)linkat_operation_create, METH_FASTCALL, g_linkat_doc},
+    {"unlinkat", (PyCFunction)unlinkat_operation_create, METH_FASTCALL, g_unlinkat_doc},
+    {"symlinkat", (PyCFunction)symlinkat_operation_create, METH_FASTCALL, g_symlinkat_doc},
     {NULL, NULL, 0, NULL},
 };
 #pragma GCC diagnostic pop

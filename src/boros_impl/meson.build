@@ -19,6 +19,10 @@ boros_impl_sources = [
     'op/close.c',
     'op/mkdir.c',
     'op/rename.c',
+    'op/fsync.c',
+    'op/linkat.c',
+    'op/unlinkat.c',
+    'op/symlinkat.c',
 
     'util/outcome.c',
     'util/python.c',

@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include "pytypedefs.h"
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
 
@@ -20,8 +21,12 @@ typedef struct _ImplState {
     PyTypeObject *CloseOperation_type;
     PyTypeObject *CancelOperation_type;
     PyTypeObject *ConnectOperation_type;
-    PyTypeObject *MkdirOperation_type;
-    PyTypeObject *RenameOperation_type;
+    PyTypeObject *MkdirAtOperation_type;
+    PyTypeObject *RenameAtOperation_type;
+    PyTypeObject *FsyncOperation_type;
+    PyTypeObject *LinkAtOperation_type;
+    PyTypeObject *UnlinkAtOperation_type;
+    PyTypeObject *SymlinkAtOperation_type;
 
     /* The thread-local runtime context. */
     Py_tss_t *local_context;
