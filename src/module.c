@@ -22,6 +22,12 @@
 #include "op/fsync.h"
 #include "op/unlinkat.h"
 #include "op/symlinkat.h"
+#include "op/accept.h"
+#include "op/bind.h"
+#include "op/listen.h"
+#include "op/send.h"
+#include "op/recv.h"
+#include "op/statx.h"
 #include "run.h"
 #include "task.h"
 
@@ -45,6 +51,13 @@ static int module_traverse(PyObject *mod, visitproc visit, void *arg) {
     Py_VISIT(state->LinkAtOperation_type);
     Py_VISIT(state->UnlinkAtOperation_type);
     Py_VISIT(state->SymlinkAtOperation_type);
+    Py_VISIT(state->AcceptOperation_type);
+    Py_VISIT(state->BindOperation_type);
+    Py_VISIT(state->ListenOperation_type);
+    Py_VISIT(state->SendOperation_type);
+    Py_VISIT(state->RecvOperation_type);
+    Py_VISIT(state->StatxResult_type);
+    Py_VISIT(state->StatxOperation_type);
     return 0;
 }
 
@@ -68,6 +81,13 @@ static int module_clear(PyObject *mod) {
     Py_CLEAR(state->LinkAtOperation_type);
     Py_CLEAR(state->UnlinkAtOperation_type);
     Py_CLEAR(state->SymlinkAtOperation_type);
+    Py_CLEAR(state->AcceptOperation_type);
+    Py_CLEAR(state->BindOperation_type);
+    Py_CLEAR(state->ListenOperation_type);
+    Py_CLEAR(state->SendOperation_type);
+    Py_CLEAR(state->RecvOperation_type);
+    Py_CLEAR(state->StatxResult_type);
+    Py_CLEAR(state->StatxOperation_type);
     return 0;
 }
 
@@ -172,6 +192,41 @@ static int module_exec(PyObject *mod) {
         return -1;
     }
 
+    state->AcceptOperation_type = accept_operation_register(mod);
+    if (state->AcceptOperation_type == NULL) {
+        return -1;
+    }
+
+    state->BindOperation_type = bind_operation_register(mod);
+    if (state->BindOperation_type == NULL) {
+        return -1;
+    }
+
+    state->ListenOperation_type = listen_operation_register(mod);
+    if (state->ListenOperation_type == NULL) {
+        return -1;
+    }
+
+    state->SendOperation_type = send_operation_register(mod);
+    if (state->SendOperation_type == NULL) {
+        return -1;
+    }
+
+    state->RecvOperation_type = recv_operation_register(mod);
+    if (state->RecvOperation_type == NULL) {
+        return -1;
+    }
+
+    state->StatxResult_type = statx_result_register(mod);
+    if (state->StatxResult_type == NULL) {
+        return -1;
+    }
+
+    state->StatxOperation_type = statx_operation_register(mod);
+    if (state->StatxOperation_type == NULL) {
+        return -1;
+    }
+
     state->local_handle = PyThread_tss_alloc();
     if (state->local_handle == NULL) {
         return -1;
@@ -199,6 +254,12 @@ PyDoc_STRVAR(g_fsync_doc, "Asynchronous fsync(2) operation on the io_uring.");
 PyDoc_STRVAR(g_linkat_doc, "Asynchronous linkat(2) operationg on the io_uring.");
 PyDoc_STRVAR(g_unlinkat_doc, "Asynchronous unlinkat(2) operationg on the io_uring.");
 PyDoc_STRVAR(g_symlinkat_doc, "Asynchronous symlinkat(2) operationg on the io_uring.");
+PyDoc_STRVAR(g_accept_doc, "Asynchronous accept(2) operation on the io_uring.");
+PyDoc_STRVAR(g_bind_doc, "Asynchronous bind(2) operation on the io_uring.");
+PyDoc_STRVAR(g_listen_doc, "Asynchronous listen(2) operation on the io_uring.");
+PyDoc_STRVAR(g_send_doc, "Asynchronous send(2) operation on the io_uring.");
+PyDoc_STRVAR(g_recv_doc, "Asynchronous recv(2) operation on the io_uring.");
+PyDoc_STRVAR(g_statx_doc, "Asynchronous statx(2) operation on the io_uring.");
 
 PyDoc_STRVAR(g_run_doc, "Drives a given coroutine to completion.\n\n"
                         "This is the entrypoint to the boros runtime.");
@@ -222,6 +283,12 @@ static PyMethodDef g_module_methods[] = {
     {"linkat", (PyCFunction)linkat_operation_create, METH_FASTCALL, g_linkat_doc},
     {"unlinkat", (PyCFunction)unlinkat_operation_create, METH_FASTCALL, g_unlinkat_doc},
     {"symlinkat", (PyCFunction)symlinkat_operation_create, METH_FASTCALL, g_symlinkat_doc},
+    {"accept", (PyCFunction)accept_operation_create, METH_FASTCALL, g_accept_doc},
+    {"bind", (PyCFunction)bind_operation_create, METH_FASTCALL, g_bind_doc},
+    {"listen", (PyCFunction)listen_operation_create, METH_FASTCALL, g_listen_doc},
+    {"send", (PyCFunction)send_operation_create, METH_FASTCALL, g_send_doc},
+    {"recv", (PyCFunction)recv_operation_create, METH_FASTCALL, g_recv_doc},
+    {"statx", (PyCFunction)statx_operation_create, METH_FASTCALL, g_statx_doc},
     {NULL, NULL, 0, NULL},
 };
 #pragma GCC diagnostic pop

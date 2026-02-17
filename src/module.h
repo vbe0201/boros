@@ -27,6 +27,13 @@ typedef struct _ImplState {
     PyTypeObject *LinkAtOperation_type;
     PyTypeObject *UnlinkAtOperation_type;
     PyTypeObject *SymlinkAtOperation_type;
+    PyTypeObject *AcceptOperation_type;
+    PyTypeObject *BindOperation_type;
+    PyTypeObject *ListenOperation_type;
+    PyTypeObject *SendOperation_type;
+    PyTypeObject *RecvOperation_type;
+    PyTypeObject *StatxResult_type;
+    PyTypeObject *StatxOperation_type;
 
     /* The thread-local runtime handle. */
     Py_tss_t *local_handle;

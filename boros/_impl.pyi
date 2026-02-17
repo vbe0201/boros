@@ -51,6 +51,46 @@ class RunConfig:
     #: The fd of an existing io_uring instance whose work queue should be shared.
     wqfd: int
 
+class StatxResult:
+    """Result of a statx(2) system call."""
+
+    #: Last access time in seconds since the epoch.
+    atime: int
+    #: Nanosecond part of the last access time.
+    atime_nsec: int
+    #: Preferred block size for I/O.
+    blksize: int
+    #: Number of 512-byte blocks allocated.
+    blocks: int
+    #: Last status change time in seconds since the epoch.
+    ctime: int
+    #: Nanosecond part of the last status change time.
+    ctime_nsec: int
+    #: Major device number of the device containing the file.
+    dev_major: int
+    #: Minor device number of the device containing the file.
+    dev_minor: int
+    #: Group ID of the file owner.
+    gid: int
+    #: Inode number.
+    ino: int
+    #: File type and permissions.
+    mode: int
+    #: Last modification time in seconds since the epoch.
+    mtime: int
+    #: Nanosecond part of the last modification time.
+    mtime_nsec: int
+    #: Number of hard links.
+    nlink: int
+    #: Major device number of the file, if it is a device.
+    rdev_major: int
+    #: Minor device number of the file, if it is a device.
+    rdev_minor: int
+    #: Total size in bytes.
+    size: int
+    #: User ID of the file owner.
+    uid: int
+
 def nop(echo: int) -> Awaitable[int]:
     """Asynchronous nop operation on the io_uring."""
     ...
@@ -150,6 +190,42 @@ def connect(fd: int, af: Literal[AddressFamily.AF_UNIX], address: _PathT) -> Awa
 
 def connect(fd: int, af: int, address: _SockAddrT) -> Awaitable[None]:
     """Asynchronous connect(2) operation on the io_uring."""
+    ...
+
+def accept(fd: int, flags: int) -> Awaitable[tuple[int, _SockAddrT]]:
+    """Asynchronous accept(2) operation on the io_uring."""
+    ...
+
+@overload
+def bind(fd: int, af: Literal[AddressFamily.AF_INET], address: _SockAddrV4T) -> Awaitable[None]:
+    ...
+
+@overload
+def bind(fd: int, af: Literal[AddressFamily.AF_INET6], address: _SockAddrV6T) -> Awaitable[None]:
+    ...
+
+@overload
+def bind(fd: int, af: Literal[AddressFamily.AF_UNIX], address: _PathT) -> Awaitable[None]:
+    ...
+
+def bind(fd: int, af: int, address: _SockAddrT) -> Awaitable[None]:
+    """Asynchronous bind(2) operation on the io_uring."""
+    ...
+
+def listen(fd: int, backlog: int) -> Awaitable[None]:
+    """Asynchronous listen(2) operation on the io_uring."""
+    ...
+
+def send(fd: int, buf: bytes, flags: int) -> Awaitable[int]:
+    """Asynchronous send(2) operation on the io_uring."""
+    ...
+
+def recv(fd: int, count: int, flags: int) -> Awaitable[bytes]:
+    """Asynchronous recv(2) operation on the io_uring."""
+    ...
+
+def statx(dfd: int | None, path: _PathT, flags: int, mask: int) -> Awaitable[StatxResult]:
+    """Asynchronous statx(2) operation on the io_uring."""
     ...
 
 def run(coro: Coroutine[Any, None, _RunT], conf: RunConfig) -> _RunT:
