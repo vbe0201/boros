@@ -5,7 +5,6 @@
 
 #include "util/python.h"
 
-#include <liburing.h>
 #include <string.h>
 
 #include "module.h"

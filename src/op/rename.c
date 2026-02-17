@@ -3,15 +3,14 @@
 
 #include "op/rename.h"
 
-#include <liburing.h>
+#include "util/python.h"
 
 #include "module.h"
-#include "util/python.h"
 
 static void renameat_prepare(PyObject *self, struct io_uring_sqe *sqe) {
     RenameAtOperation *op = (RenameAtOperation *)self;
-    const char *oldpath = PyBytes_AS_STRING(op->oldpath);
-    const char *newpath = PyBytes_AS_STRING(op->newpath);
+    const char *oldpath   = PyBytes_AS_STRING(op->oldpath);
+    const char *newpath   = PyBytes_AS_STRING(op->newpath);
     io_uring_prep_renameat(sqe, op->base.scratch, oldpath, op->newdfd, newpath, op->flags);
 }
 
@@ -46,7 +45,7 @@ PyObject *renameat_operation_create(PyObject *mod, PyObject *const *args, Py_ssi
         olddfd = AT_FDCWD;
     } else if (!python_parse_int(&olddfd, args[0])) {
         return NULL;
-    } 
+    }
 
     PyObject *oldpath;
     if (!PyUnicode_FSConverter(args[1], &oldpath)) {
@@ -58,7 +57,7 @@ PyObject *renameat_operation_create(PyObject *mod, PyObject *const *args, Py_ssi
         newdfd = AT_FDCWD;
     } else if (!python_parse_int(&newdfd, args[2])) {
         return NULL;
-    } 
+    }
 
     PyObject *newpath;
     if (!PyUnicode_FSConverter(args[3], &newpath)) {
@@ -75,11 +74,11 @@ PyObject *renameat_operation_create(PyObject *mod, PyObject *const *args, Py_ssi
     RenameAtOperation *op = (RenameAtOperation *)operation_alloc(state->RenameAtOperation_type, state);
     if (op != NULL) {
         op->base.vtable  = &g_renameat_operation_vtable;
-        op->oldpath = oldpath;
-        op->newpath = newpath;
+        op->oldpath      = oldpath;
+        op->newpath      = newpath;
         op->base.scratch = olddfd;
-        op->newdfd = newdfd;
-        op->flags = flags;
+        op->newdfd       = newdfd;
+        op->flags        = flags;
     } else {
         Py_DECREF(oldpath);
         Py_DECREF(newpath);

@@ -3,16 +3,14 @@
 
 #include "op/symlinkat.h"
 
-#include <liburing.h>
+#include "util/python.h"
 
 #include "module.h"
-#include "object.h"
-#include "util/python.h"
 
 static void symlinkat_prepare(PyObject *self, struct io_uring_sqe *sqe) {
     SymlinkAtOperation *op = (SymlinkAtOperation *)self;
 
-    const char *target = PyBytes_AS_STRING(op->target);
+    const char *target   = PyBytes_AS_STRING(op->target);
     const char *linkpath = PyBytes_AS_STRING(op->linkpath);
 
     io_uring_prep_symlinkat(sqe, target, op->base.scratch, linkpath);
@@ -65,8 +63,8 @@ PyObject *symlinkat_operation_create(PyObject *mod, PyObject *const *args, Py_ss
     if (op != NULL) {
         op->base.vtable  = &g_symlink_operation_vtable;
         op->base.scratch = newdirfd;
-        op->target = target;
-        op->linkpath = linkpath;
+        op->target       = target;
+        op->linkpath     = linkpath;
     } else {
         Py_DECREF(target);
         Py_DECREF(linkpath);
@@ -108,5 +106,6 @@ static PyType_Spec g_symlinkat_operation_spec = {
 
 PyTypeObject *symlinkat_operation_register(PyObject *mod) {
     ImplState *state = PyModule_GetState(mod);
-    return (PyTypeObject *)PyType_FromModuleAndSpec(mod, &g_symlinkat_operation_spec, (PyObject *)state->Operation_type);
+    return (PyTypeObject *)PyType_FromModuleAndSpec(mod, &g_symlinkat_operation_spec,
+                                                    (PyObject *)state->Operation_type);
 }

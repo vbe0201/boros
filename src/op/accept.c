@@ -3,8 +3,6 @@
 
 #include "op/accept.h"
 
-#include "util/python.h"
-
 #include "module.h"
 #include "util/sockaddr.h"
 

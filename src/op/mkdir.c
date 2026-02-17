@@ -3,10 +3,9 @@
 
 #include "op/mkdir.h"
 
-#include <liburing.h>
+#include "util/python.h"
 
 #include "module.h"
-#include "util/python.h"
 
 static void mkdirat_prepare(PyObject *self, struct io_uring_sqe *sqe) {
     MkdirAtOperation *op = (MkdirAtOperation *)self;
@@ -46,7 +45,7 @@ PyObject *mkdirat_operation_create(PyObject *mod, PyObject *const *args, Py_ssiz
         dfd = AT_FDCWD;
     } else if (!python_parse_int(&dfd, args[0])) {
         return NULL;
-    }   
+    }
 
     PyObject *path;
     if (!PyUnicode_FSConverter(args[1], &path)) {

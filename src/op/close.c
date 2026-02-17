@@ -3,10 +3,9 @@
 
 #include "op/close.h"
 
-#include <liburing.h>
+#include "util/python.h"
 
 #include "module.h"
-#include "util/python.h"
 
 static void close_prepare(PyObject *self, struct io_uring_sqe *sqe) {
     CloseOperation *op = (CloseOperation *)self;

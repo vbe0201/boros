@@ -6,7 +6,6 @@
 #include "util/python.h"
 
 #include <fcntl.h>
-#include <liburing.h>
 #include <stddef.h>
 
 #include "module.h"

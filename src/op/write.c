@@ -3,10 +3,9 @@
 
 #include "op/write.h"
 
-#include <liburing.h>
+#include "util/python.h"
 
 #include "module.h"
-#include "util/python.h"
 
 static void write_prepare(PyObject *self, struct io_uring_sqe *sqe) {
     WriteOperation *op = (WriteOperation *)self;

@@ -7,7 +7,6 @@
 
 #include "op/base.h"
 
-/* Python object exposing the result of a statx(2) call. */
 typedef struct {
     PyObject_HEAD
     __s64 atime;

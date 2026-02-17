@@ -3,10 +3,9 @@
 
 #include "op/recv.h"
 
-#include <liburing.h>
+#include "util/python.h"
 
 #include "module.h"
-#include "util/python.h"
 
 static void recv_prepare(PyObject *self, struct io_uring_sqe *sqe) {
     RecvOperation *op = (RecvOperation *)self;

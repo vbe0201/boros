@@ -3,11 +3,9 @@
 
 #include "op/linkat.h"
 
-#include <liburing.h>
+#include "util/python.h"
 
 #include "module.h"
-#include "object.h"
-#include "util/python.h"
 
 static void linkat_prepare(PyObject *self, struct io_uring_sqe *sqe) {
     LinkAtOperation *op = (LinkAtOperation *)self;
@@ -19,7 +17,7 @@ static void linkat_prepare(PyObject *self, struct io_uring_sqe *sqe) {
 
 static void linkat_complete(PyObject *self, struct io_uring_cqe *cqe) {
     LinkAtOperation *op = (LinkAtOperation *)self;
-    
+
     if (cqe->res < 0) {
         errno = -cqe->res;
         outcome_capture_errno(&(op->base.outcome));
@@ -72,15 +70,14 @@ PyObject *linkat_operation_create(PyObject *mod, PyObject *const *args, Py_ssize
         return NULL;
     }
 
-
     LinkAtOperation *op = (LinkAtOperation *)operation_alloc(state->LinkAtOperation_type, state);
     if (op != NULL) {
         op->base.vtable  = &g_linkat_operation_vtable;
         op->base.scratch = flags;
-        op->olddirfd = olddirfd;
-        op->newdirfd = newdirfd;
-        op->oldpath = oldpath;
-        op->newpath = newpath;
+        op->olddirfd     = olddirfd;
+        op->newdirfd     = newdirfd;
+        op->oldpath      = oldpath;
+        op->newpath      = newpath;
     } else {
         Py_DECREF(oldpath);
         Py_DECREF(newpath);

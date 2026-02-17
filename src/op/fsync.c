@@ -3,10 +3,9 @@
 
 #include "op/fsync.h"
 
-#include <liburing.h>
+#include "util/python.h"
 
 #include "module.h"
-#include "util/python.h"
 
 static void fsync_prepare(PyObject *self, struct io_uring_sqe *sqe) {
     FsyncOperation *op = (FsyncOperation *)self;
@@ -54,7 +53,7 @@ PyObject *fsync_operation_create(PyObject *mod, PyObject *const *args, Py_ssize_
     if (op != NULL) {
         op->base.vtable  = &g_fsync_operation_vtable;
         op->base.scratch = fd;
-        op->fsync_flags = fsync_flags;
+        op->fsync_flags  = fsync_flags;
     }
 
     return (PyObject *)op;

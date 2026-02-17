@@ -3,9 +3,8 @@
 
 #include "op/unlinkat.h"
 
-#include <liburing.h>
-
 #include "util/python.h"
+
 #include "module.h"
 
 static void unlinkat_prepare(PyObject *self, struct io_uring_sqe *sqe) {

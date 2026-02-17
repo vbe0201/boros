@@ -6,9 +6,7 @@
 #include "util/python.h"
 
 #include <fcntl.h>
-#include <liburing.h>
 
-#include "abstract.h"
 #include "module.h"
 
 static void openat_prepare(PyObject *self, struct io_uring_sqe *sqe) {

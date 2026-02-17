@@ -3,10 +3,9 @@
 
 #include "op/send.h"
 
-#include <liburing.h>
+#include "util/python.h"
 
 #include "module.h"
-#include "util/python.h"
 
 static void send_prepare(PyObject *self, struct io_uring_sqe *sqe) {
     SendOperation *op = (SendOperation *)self;

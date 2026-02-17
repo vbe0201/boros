@@ -3,10 +3,9 @@
 
 #include "op/listen.h"
 
-#include <liburing.h>
+#include "util/python.h"
 
 #include "module.h"
-#include "util/python.h"
 
 static void listen_prepare(PyObject *self, struct io_uring_sqe *sqe) {
     ListenOperation *op = (ListenOperation *)self;
