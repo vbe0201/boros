@@ -1,4 +1,4 @@
-# Type stubs for the native boros._low_level module.
+# Type stubs for the native boros._impl module.
 
 from collections.abc import Awaitable, Coroutine
 from os import PathLike

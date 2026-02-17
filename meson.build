@@ -38,4 +38,5 @@ endif
 
 py = import('python').find_installation(pure: false)
 
+subdir('boros')
 subdir('src')
