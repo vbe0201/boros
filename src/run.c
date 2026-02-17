@@ -19,10 +19,10 @@ PyObject *boros_run(PyObject *mod, PyObject *const *args, Py_ssize_t nargsf) {
 
     /* Parse the first argument into a coroutine object. */
     PyObject *coro = args[0];
-    if (!PyCoro_CheckExact(coro)) {
-        PyErr_SetString(PyExc_TypeError, "Expected coroutine object");
-        return NULL;
-    }
+    //if (!PyCoro_CheckExact(coro)) {
+    //    PyErr_SetString(PyExc_TypeError, "Expected coroutine object");
+    //    return NULL;
+    //}
 
     /* Parse the second argument into a RunConfig-or-subclass instance. */
     RunConfig *conf = (RunConfig *)args[1];

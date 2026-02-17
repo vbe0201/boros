@@ -32,10 +32,19 @@ static inline void runtime_destroy(RuntimeHandle *handle) {
 
 RuntimeHandle *runtime_enter(PyObject *mod, RunConfig *config) {
     ImplState *state = PyModule_GetState(mod);
+    RuntimeHandle *handle;
 
     assert(PyThread_tss_is_created(state->local_handle));
-    RuntimeHandle *handle = runtime_create(config);
+
+    handle = PyThread_tss_get(state->local_handle);
+    if (handle != NULL) {
+        PyErr_SetString(PyExc_RuntimeError, "Runtime is already active on the current thread");
+        return NULL;
+    }
+
+    handle = runtime_create(config);
     PyThread_tss_set(state->local_handle, handle);
+
     return handle;
 }
 
