@@ -23,6 +23,7 @@ boros_impl_sources = [
     'op/recv.c',
     'op/rename.c',
     'op/send.c',
+    'op/sockopt.c',
     'op/socket.c',
     'op/statx.c',
     'op/symlinkat.c',

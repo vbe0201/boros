@@ -34,6 +34,8 @@ typedef struct _ImplState {
     PyTypeObject *RecvOperation_type;
     PyTypeObject *StatxResult_type;
     PyTypeObject *StatxOperation_type;
+    PyTypeObject *GetsockoptOperation_type;
+    PyTypeObject *SetsockoptOperation_type;
 
     /* The thread-local runtime handle. */
     Py_tss_t *local_handle;

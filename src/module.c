@@ -6,28 +6,28 @@
 #include <assert.h>
 
 #include "driver/run_config.h"
+#include "op/accept.h"
 #include "op/base.h"
+#include "op/bind.h"
 #include "op/cancel.h"
 #include "op/close.h"
 #include "op/connect.h"
+#include "op/fsync.h"
 #include "op/linkat.h"
+#include "op/listen.h"
+#include "op/mkdir.h"
 #include "op/nop.h"
 #include "op/open.h"
 #include "op/read.h"
-#include "op/socket.h"
-#include "op/write.h"
-#include "op/cancel.h"
-#include "op/mkdir.h"
-#include "op/rename.h"
-#include "op/fsync.h"
-#include "op/unlinkat.h"
-#include "op/symlinkat.h"
-#include "op/accept.h"
-#include "op/bind.h"
-#include "op/listen.h"
-#include "op/send.h"
 #include "op/recv.h"
+#include "op/rename.h"
+#include "op/send.h"
+#include "op/socket.h"
+#include "op/sockopt.h"
 #include "op/statx.h"
+#include "op/symlinkat.h"
+#include "op/unlinkat.h"
+#include "op/write.h"
 #include "run.h"
 #include "task.h"
 
@@ -58,6 +58,8 @@ static int module_traverse(PyObject *mod, visitproc visit, void *arg) {
     Py_VISIT(state->RecvOperation_type);
     Py_VISIT(state->StatxResult_type);
     Py_VISIT(state->StatxOperation_type);
+    Py_VISIT(state->GetsockoptOperation_type);
+    Py_VISIT(state->SetsockoptOperation_type);
     return 0;
 }
 
@@ -88,6 +90,8 @@ static int module_clear(PyObject *mod) {
     Py_CLEAR(state->RecvOperation_type);
     Py_CLEAR(state->StatxResult_type);
     Py_CLEAR(state->StatxOperation_type);
+    Py_CLEAR(state->GetsockoptOperation_type);
+    Py_CLEAR(state->SetsockoptOperation_type);
     return 0;
 }
 
@@ -227,6 +231,16 @@ static int module_exec(PyObject *mod) {
         return -1;
     }
 
+    state->GetsockoptOperation_type = getsockopt_operation_register(mod);
+    if (state->GetsockoptOperation_type == NULL) {
+        return -1;
+    }
+
+    state->SetsockoptOperation_type = setsockopt_operation_register(mod);
+    if (state->SetsockoptOperation_type == NULL) {
+        return -1;
+    }
+
     state->local_handle = PyThread_tss_alloc();
     if (state->local_handle == NULL) {
         return -1;
@@ -260,6 +274,8 @@ PyDoc_STRVAR(g_listen_doc, "Asynchronous listen(2) operation on the io_uring.");
 PyDoc_STRVAR(g_send_doc, "Asynchronous send(2) operation on the io_uring.");
 PyDoc_STRVAR(g_recv_doc, "Asynchronous recv(2) operation on the io_uring.");
 PyDoc_STRVAR(g_statx_doc, "Asynchronous statx(2) operation on the io_uring.");
+PyDoc_STRVAR(g_getsockopt_doc, "Asynchronous getsockopt(2) operation on the io_uring.");
+PyDoc_STRVAR(g_setsockopt_doc, "Asynchronous setsockopt(2) operation on the io_uring.");
 
 PyDoc_STRVAR(g_run_doc, "Drives a given coroutine to completion.\n\n"
                         "This is the entrypoint to the boros runtime.");
@@ -289,6 +305,8 @@ static PyMethodDef g_module_methods[] = {
     {"send", (PyCFunction)send_operation_create, METH_FASTCALL, g_send_doc},
     {"recv", (PyCFunction)recv_operation_create, METH_FASTCALL, g_recv_doc},
     {"statx", (PyCFunction)statx_operation_create, METH_FASTCALL, g_statx_doc},
+    {"getsockopt", (PyCFunction)getsockopt_operation_create, METH_FASTCALL, g_getsockopt_doc},
+    {"setsockopt", (PyCFunction)setsockopt_operation_create, METH_FASTCALL, g_setsockopt_doc},
     {NULL, NULL, 0, NULL},
 };
 #pragma GCC diagnostic pop

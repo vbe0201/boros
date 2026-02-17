@@ -228,6 +228,30 @@ def statx(dfd: int | None, path: _PathT, flags: int, mask: int) -> Awaitable[Sta
     """Asynchronous statx(2) operation on the io_uring."""
     ...
 
+@overload
+def getsockopt(fd: int, level: int, optname: int) -> Awaitable[int]:
+    ...
+
+@overload
+def getsockopt(fd: int, level: int, optname: int, optlen: int) -> Awaitable[bytes]:
+    ...
+
+def getsockopt(fd: int, level: int, optname: int, optlen: int = ...) -> Awaitable[int | bytes]:
+    """Asynchronous getsockopt(2) operation on the io_uring."""
+    ...
+
+@overload
+def setsockopt(fd: int, level: int, optname: int, value: int) -> Awaitable[None]:
+    ...
+
+@overload
+def setsockopt(fd: int, level: int, optname: int, value: bytes) -> Awaitable[None]:
+    ...
+
+def setsockopt(fd: int, level: int, optname: int, value: int | bytes) -> Awaitable[None]:
+    """Asynchronous setsockopt(2) operation on the io_uring."""
+    ...
+
 def run(coro: Coroutine[Any, None, _RunT], conf: RunConfig) -> _RunT:
     """
     Drives a given coroutine to completion.
