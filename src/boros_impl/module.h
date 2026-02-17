@@ -28,6 +28,6 @@ typedef struct _ImplState {
     PyTypeObject *UnlinkAtOperation_type;
     PyTypeObject *SymlinkAtOperation_type;
 
-    /* The thread-local runtime context. */
-    Py_tss_t *local_context;
+    /* The thread-local runtime handle. */
+    Py_tss_t *local_handle;
 } ImplState;

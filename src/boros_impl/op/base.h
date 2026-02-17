@@ -43,15 +43,10 @@ typedef struct {
     PyObject *op;
 } OperationWaiter;
 
-/* Allocates an Operation and initializes the base state. */
 Operation *operation_alloc(PyTypeObject *tp, struct _ImplState *state);
 
-/* Reusable garbage collection hooks for Operation fields. */
 int operation_traverse(Operation *self, visitproc visit, void *arg);
 int operation_clear(Operation *self);
 
-/* Registers Operation as a Python class onto the module. */
 PyTypeObject *operation_register(PyObject *mod);
-
-/* Registers OperationWaiter as a Python class onto the module. */
 PyTypeObject *operation_waiter_register(PyObject *mod);

@@ -5,9 +5,7 @@
 
 #include <assert.h>
 
-#include "context/run_config.h"
-#include "methodobject.h"
-#include "objimpl.h"
+#include "driver/run_config.h"
 #include "op/base.h"
 #include "op/cancel.h"
 #include "op/close.h"
@@ -24,7 +22,6 @@
 #include "op/fsync.h"
 #include "op/unlinkat.h"
 #include "op/symlinkat.h"
-#include "pymacro.h"
 #include "run.h"
 #include "task.h"
 
@@ -77,7 +74,7 @@ static int module_clear(PyObject *mod) {
 static void module_free(void *mod) {
     ImplState *state = PyModule_GetState(mod);
 
-    PyThread_tss_free(state->local_context);
+    PyThread_tss_free(state->local_handle);
 
     module_clear(mod);
 }
@@ -175,12 +172,12 @@ static int module_exec(PyObject *mod) {
         return -1;
     }
 
-    state->local_context = PyThread_tss_alloc();
-    if (state->local_context == NULL) {
+    state->local_handle = PyThread_tss_alloc();
+    if (state->local_handle == NULL) {
         return -1;
     }
 
-    if (PyThread_tss_create(state->local_context) != 0) {
+    if (PyThread_tss_create(state->local_handle) != 0) {
         return -1;
     }
 

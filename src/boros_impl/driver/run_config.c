@@ -1,18 +1,18 @@
 /* This source file is part of the boros project. */
 /* SPDX-License-Identifier: ISC */
 
-#include "context/run_config.h"
-
-#include <stddef.h>
+#include "driver/run_config.h"
 
 #include "util/python.h"
+
+#include <stddef.h>
 
 PyDoc_STRVAR(g_run_config_doc, "Configuration for the runtime context.\n\n"
                                "These settings are used to create the subsystems and must be passed to\n"
                                "every runner invocation.");
-
 PyDoc_STRVAR(g_run_config_sq_size_doc, "The capacity of the io_uring submission queue.");
 PyDoc_STRVAR(g_run_config_cq_size_doc, "The capacity of the io_uring completion queue.");
+PyDoc_STRVAR(g_run_config_ftable_size_doc, "The number of direct descriptors managed by this ring instance.");
 PyDoc_STRVAR(g_run_config_wqfd_doc, "The fd of an existing io_uring instance whose work queue should be shared.");
 
 static int run_config_traverse(PyObject *self, visitproc visit, void *arg) {
@@ -30,16 +30,18 @@ static int run_config_init(PyObject *self, PyObject *args, PyObject *kwds) {
     (void)kwds;
 
     RunConfig *conf = (RunConfig *)self;
-    conf->sq_size   = 0;
-    conf->cq_size   = 0;
-    conf->wqfd      = -1;
 
+    conf->sq_size     = 0;
+    conf->cq_size     = 0;
+    conf->ftable_size = 0;
+    conf->wqfd        = -1;
     return 0;
 }
 
 static PyMemberDef g_run_config_members[] = {
     {"sq_size", Py_T_UINT, offsetof(RunConfig, sq_size), 0, g_run_config_sq_size_doc},
     {"cq_size", Py_T_UINT, offsetof(RunConfig, cq_size), 0, g_run_config_cq_size_doc},
+    {"ftable_size", Py_T_UINT, offsetof(RunConfig, ftable_size), 0, g_run_config_ftable_size_doc},
     {"wqfd", Py_T_INT, offsetof(RunConfig, wqfd), 0, g_run_config_wqfd_doc},
     {NULL, 0, 0, 0, NULL},
 };

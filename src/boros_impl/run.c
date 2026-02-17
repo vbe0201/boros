@@ -3,47 +3,8 @@
 
 #include "run.h"
 
-#include "context/state.h"
+#include "driver/handle.h"
 #include "module.h"
-#include "op/base.h"
-
-static struct io_uring_sqe *get_submission(RuntimeState *rt) {
-    struct io_uring_sqe *sqe;
-
-    sqe = proactor_get_submission(&rt->proactor);
-    if (sqe == NULL) {
-        /*
-         * When the submission queue is full, the best solution is to
-         * just submit operations to the kernel to make space. We will
-         * inform the user though because this usually only happens
-         * with a chronically undersized submission queue ring.
-         */
-        PyErr_WarnEx(PyExc_UserWarning, "Submission Queue too small. Resize it.", 1);
-        // TODO: More detailed warning message.
-
-        proactor_submit(&rt->proactor);
-        // TODO: Error handling for submit
-
-        sqe = proactor_get_submission(&rt->proactor);
-        assert(sqe != NULL);
-    }
-
-    return sqe;
-}
-
-static void schedule_io(RuntimeState *rt, Task *task, Operation *op) {
-    struct io_uring_sqe *sqe = get_submission(rt);
-
-    /*
-     * Prepare the operation with its designated setup callback and
-     * attach the Operation as a marker to the submission. After a
-     * kernel roundtrip, we will get the same Operation reference
-     * back in the completion and can unblock the waiting Task.
-     */
-    op->awaiter = (Task *)Py_NewRef((PyObject *)task);
-    (op->vtable->prepare)((PyObject *)op, sqe);
-    io_uring_sqe_set_data(sqe, op);
-}
 
 PyObject *boros_run(PyObject *mod, PyObject *const *args, Py_ssize_t nargsf) {
     PyObject *out;
@@ -77,7 +38,7 @@ PyObject *boros_run(PyObject *mod, PyObject *const *args, Py_ssize_t nargsf) {
     }
 
     /* Set up the runtime state. */
-    RuntimeState *rt = runtime_state_create(mod, conf);
+    RuntimeHandle *rt = runtime_enter(mod, conf);
     if (rt == NULL) {
         Py_DECREF(root_task);
         return NULL;
@@ -96,7 +57,8 @@ PyObject *boros_run(PyObject *mod, PyObject *const *args, Py_ssize_t nargsf) {
             //  --> I don't think we even have PyIter_Send values. Operation just unwraps
             //      its outcome when it's resumed again
             if (PyObject_TypeCheck(out, state->Operation_type) != 0) {
-                schedule_io(rt, current, (Operation *)out);
+                runtime_schedule_io(rt, current, (Operation *)out);
+                // TODO: Error handling
             } else {
                 PyErr_Format(PyExc_RuntimeError, "Task got bad yield value: %R", out);
 
@@ -116,13 +78,11 @@ PyObject *boros_run(PyObject *mod, PyObject *const *args, Py_ssize_t nargsf) {
         }
 
         // TODO: Error handling
-        proactor_run(&rt->proactor, 0);
-
-        proactor_reap_completions(&rt->proactor, &rt->run_queue);
+        proactor_run(&rt->proactor, &rt->run_queue, 0);
     }
 
 end:
     Py_DECREF(root_task);
-    runtime_state_destroy(mod);
+    runtime_exit(mod);
     return out;
 }

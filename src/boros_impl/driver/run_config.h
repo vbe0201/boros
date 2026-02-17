@@ -11,6 +11,7 @@ typedef struct {
     PyObject_HEAD
     unsigned int sq_size;
     unsigned int cq_size;
+    unsigned int ftable_size;
     int wqfd;
 } RunConfig;
 
