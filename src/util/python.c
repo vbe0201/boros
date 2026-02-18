@@ -32,6 +32,9 @@ void python_tp_dealloc(PyObject *self) {
 bool python_parse_int(int *out, PyObject *ob) {
     int overflow;
     long tmp = PyLong_AsLongAndOverflow(ob, &overflow);
+    if (tmp == -1 && PyErr_Occurred()) {
+        return false;
+    }
 
     if (overflow != 0 || tmp < INT_MIN || tmp > INT_MAX) {
         PyErr_SetString(PyExc_OverflowError, "Python int too large to convert to C int");
@@ -44,7 +47,7 @@ bool python_parse_int(int *out, PyObject *ob) {
 
 bool python_parse_unsigned_int(unsigned int *out, PyObject *ob) {
     unsigned long tmp = PyLong_AsUnsignedLong(ob);
-    if (PyErr_Occurred()) {
+    if (tmp == (unsigned long)-1 && PyErr_Occurred()) {
         return false;
     }
 

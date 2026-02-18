@@ -35,8 +35,8 @@ PyObject *renameat_operation_create(PyObject *mod, PyObject *const *args, Py_ssi
     ImplState *state = PyModule_GetState(mod);
 
     Py_ssize_t nargs = PyVectorcall_NARGS(nargsf);
-    if (nargs != 3) {
-        PyErr_Format(PyExc_TypeError, "Expected 3 argument, got %zu instead", nargs);
+    if (nargs != 5) {
+        PyErr_Format(PyExc_TypeError, "Expected 5 arguments, got %zu instead", nargs);
         return NULL;
     }
 
@@ -53,14 +53,16 @@ PyObject *renameat_operation_create(PyObject *mod, PyObject *const *args, Py_ssi
     }
 
     int newdfd;
-    if (args[0] == Py_None) {
+    if (args[2] == Py_None) {
         newdfd = AT_FDCWD;
     } else if (!python_parse_int(&newdfd, args[2])) {
+        Py_DECREF(oldpath);
         return NULL;
     }
 
     PyObject *newpath;
     if (!PyUnicode_FSConverter(args[3], &newpath)) {
+        Py_DECREF(oldpath);
         return NULL;
     }
 
@@ -68,6 +70,8 @@ PyObject *renameat_operation_create(PyObject *mod, PyObject *const *args, Py_ssi
     if (args[4] == Py_None) {
         flags = 0;
     } else if (!python_parse_unsigned_int(&flags, args[4])) {
+        Py_DECREF(oldpath);
+        Py_DECREF(newpath);
         return NULL;
     }
 

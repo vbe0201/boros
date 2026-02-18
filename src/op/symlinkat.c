@@ -51,11 +51,13 @@ PyObject *symlinkat_operation_create(PyObject *mod, PyObject *const *args, Py_ss
     if (args[1] == Py_None) {
         newdirfd = AT_FDCWD;
     } else if (!python_parse_int(&newdirfd, args[1])) {
+        Py_DECREF(target);
         return NULL;
     }
 
     PyObject *linkpath;
     if (!PyUnicode_FSConverter(args[2], &linkpath)) {
+        Py_DECREF(target);
         return NULL;
     }
 

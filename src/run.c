@@ -7,41 +7,48 @@
 #include "module.h"
 
 PyObject *boros_run(PyObject *mod, PyObject *const *args, Py_ssize_t nargsf) {
-    PyObject *out;
     ImplState *state = PyModule_GetState(mod);
+    PyObject *coro   = NULL;
+    RunConfig *conf  = NULL;
+    Task *root_task  = NULL;
+    PyObject *out    = NULL;
 
     /* Make sure we received the expected number of arguments. */
     Py_ssize_t nargs = PyVectorcall_NARGS(nargsf);
     if (nargs != 2) {
+        if (nargs != 0) {
+            coro = args[0];
+        }
+
         PyErr_Format(PyExc_TypeError, "Expected 2 arguments, got %zu instead", nargs);
-        return NULL;
+        goto cleanup;
     }
 
     /* Parse the first argument into a coroutine object. */
-    PyObject *coro = args[0];
-    //if (!PyCoro_CheckExact(coro)) {
-    //    PyErr_SetString(PyExc_TypeError, "Expected coroutine object");
-    //    return NULL;
-    //}
+    coro = args[0];
+    if (!PyCoro_CheckExact(coro)) {
+        PyErr_SetString(PyExc_TypeError, "Expected coroutine object");
+        goto cleanup;
+    }
 
     /* Parse the second argument into a RunConfig-or-subclass instance. */
-    RunConfig *conf = (RunConfig *)args[1];
+    conf = (RunConfig *)args[1];
     if (PyObject_TypeCheck((PyObject *)conf, state->RunConfig_type) == 0) {
         PyErr_SetString(PyExc_TypeError, "Expected RunConfig instance");
-        return NULL;
+        goto cleanup;
     }
 
     /* Allocate a Task for our entrypoint coroutine. */
-    Task *root_task = task_create(mod, NULL, coro);
+    root_task = task_create(mod, NULL, coro);
     if (root_task == NULL) {
-        return PyErr_NoMemory();
+        PyErr_SetNone(PyExc_MemoryError);
+        goto cleanup;
     }
 
     /* Set up the runtime state. */
     RuntimeHandle *rt = runtime_enter(mod, conf);
     if (rt == NULL) {
-        Py_DECREF(root_task);
-        return NULL;
+        goto cleanup;
     }
 
     // TODO: Run queue is unbounded because running a task could add more
@@ -82,7 +89,25 @@ PyObject *boros_run(PyObject *mod, PyObject *const *args, Py_ssize_t nargsf) {
     }
 
 end:
-    Py_DECREF(root_task);
     runtime_exit(mod);
+
+cleanup:
+    /*
+     * Close the coroutine so Python does not emit a "coroutine was never
+     * awaited" RuntimeWarning when it is garbage-collected.  For a coroutine
+     * that already ran to completion this is a harmless no-op.
+     */
+    if (coro != NULL) {
+        PyObject *exc = PyErr_GetRaisedException();
+        PyObject *r   = PyObject_CallMethod(coro, "close", NULL);
+        if (r == NULL) {
+            PyErr_WriteUnraisable(coro);
+        } else {
+            Py_DECREF(r);
+        }
+        PyErr_SetRaisedException(exc);
+    }
+
+    Py_XDECREF(root_task);
     return out;
 }

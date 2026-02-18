@@ -11,7 +11,9 @@ _PathT: TypeAlias = str | bytes | PathLike[str] | PathLike[bytes]
 
 _HostIpT: TypeAlias = str | bytes | bytearray
 _SockAddrV4T: TypeAlias = tuple[_HostIpT, int]
-_SockAddrV6T: TypeAlias = tuple[_HostIpT, int] | tuple[_HostIpT, int, int] | tuple[_HostIpT, int, int, int]
+_SockAddrV6T: TypeAlias = (
+    tuple[_HostIpT, int] | tuple[_HostIpT, int, int] | tuple[_HostIpT, int, int, int]
+)
 _SockAddrT: TypeAlias = _SockAddrV4T | _SockAddrV6T | _PathT
 
 class Task:
@@ -36,6 +38,7 @@ class Task:
         """The coroutine object associated with the task."""
         ...
 
+
 class RunConfig:
     """
     Configuration for the runtime context.
@@ -48,11 +51,14 @@ class RunConfig:
     sq_size: int
     #: The capacity of the io_uring completion queue.
     cq_size: int
+    #: The number of direct descriptors managed by this ring instance.
+    ftable_size: int
     #: The fd of an existing io_uring instance whose work queue should be shared.
     wqfd: int
 
+
 class StatxResult:
-    """Result of a statx(2) system call."""
+    """Result of a :func:`statx` operation."""
 
     #: Last access time in seconds since the epoch.
     atime: int
@@ -91,55 +97,66 @@ class StatxResult:
     #: User ID of the file owner.
     uid: int
 
+
 def nop(echo: int) -> Awaitable[int]:
     """Asynchronous nop operation on the io_uring."""
     ...
+
 
 def socket(domain: int, type: int, protocol: int) -> Awaitable[int]:
     """Asynchronous socket(2) operation on the io_uring."""
     ...
 
+
 def read(fd: int, count: int, offset: int) -> Awaitable[bytes]:
     """Asynchronous read(2) operation on the io_uring."""
     ...
+
 
 def write(fd: int, buf: bytes, offset: int) -> Awaitable[int]:
     """Asynchronous write(2) operation on the io_uring."""
     ...
 
+
 def close(fd: int) -> Awaitable[int]:
     """Asynchronous close(2) operation on the io_uring."""
     ...
+
 
 def openat(dfd: int | None, path: _PathT, flags: int, mode: int) -> Awaitable[int]:
     """Asynchronous openat(2) operation on the io_uring."""
     ...
 
+
 def cancel_fd(fd: int) -> Awaitable[int]:
     """Asynchronously cancels all operations on a fd."""
     ...
+
 
 def cancel_op(op: Awaitable[Any]) -> Awaitable[int]:
     """Asynchronously cancels a specific operation."""
     ...
 
+
 def mkdirat(
-    dfd: int,
+    dfd: int | None,
     path: _PathT,
     mode: int,
 ) -> Awaitable[None]:
     """Asynchronous mkdir(2) operation on the io_uring."""
     ...
 
+
 def renameat(
-    olddfd: int,
+    olddfd: int | None,
     oldpath: _PathT,
-    newdfd: int,
+    newdfd: int | None,
     newpath: _PathT,
     flags: int,
 ) -> Awaitable[None]:
     """Asynchronous rename(2) operation on the io_uring."""
     ...
+
 
 def fsync(
     fd: int,
@@ -147,6 +164,7 @@ def fsync(
 ) -> Awaitable[None]:
     """Asynchronous fsync(2) operation on the io_uring."""
     ...
+
 
 def linkat(
     olddirfd: int | None,
@@ -158,6 +176,7 @@ def linkat(
     """Asynchronous linkat(2) operation on the io_uring."""
     ...
 
+
 def unlinkat(
     dirfd: int | None,
     path: _PathT,
@@ -166,6 +185,7 @@ def unlinkat(
     """Asynchronous unlinkat(2) operation on the io_uring."""
     ...
 
+
 def symlinkat(
     target: _PathT,
     newdirfd: int | None,
@@ -173,44 +193,57 @@ def symlinkat(
 ) -> Awaitable[None]:
     """Asynchronous symlinkat(2) operation on the io_uring."""
 
-@overload
-def connect(fd: int, af: Literal[AddressFamily.AF_INET], address: _SockAddrV4T) -> Awaitable[None]:
-    ...
-
 
 @overload
-def connect(fd: int, af: Literal[AddressFamily.AF_INET6], address: _SockAddrV6T) -> Awaitable[None]:
-    ...
+def connect(
+    fd: int, af: Literal[AddressFamily.AF_INET], address: _SockAddrV4T
+) -> Awaitable[None]: ...
 
 
 @overload
-def connect(fd: int, af: Literal[AddressFamily.AF_UNIX], address: _PathT) -> Awaitable[None]:
-    ...
+def connect(
+    fd: int, af: Literal[AddressFamily.AF_INET6], address: _SockAddrV6T
+) -> Awaitable[None]: ...
+
+
+@overload
+def connect(
+    fd: int, af: Literal[AddressFamily.AF_UNIX], address: _PathT
+) -> Awaitable[None]: ...
 
 
 def connect(fd: int, af: int, address: _SockAddrT) -> Awaitable[None]:
     """Asynchronous connect(2) operation on the io_uring."""
     ...
 
+
 def accept(fd: int, flags: int) -> Awaitable[tuple[int, _SockAddrT]]:
     """Asynchronous accept(2) operation on the io_uring."""
     ...
 
-@overload
-def bind(fd: int, af: Literal[AddressFamily.AF_INET], address: _SockAddrV4T) -> Awaitable[None]:
-    ...
 
 @overload
-def bind(fd: int, af: Literal[AddressFamily.AF_INET6], address: _SockAddrV6T) -> Awaitable[None]:
-    ...
+def bind(
+    fd: int, af: Literal[AddressFamily.AF_INET], address: _SockAddrV4T
+) -> Awaitable[None]: ...
+
 
 @overload
-def bind(fd: int, af: Literal[AddressFamily.AF_UNIX], address: _PathT) -> Awaitable[None]:
-    ...
+def bind(
+    fd: int, af: Literal[AddressFamily.AF_INET6], address: _SockAddrV6T
+) -> Awaitable[None]: ...
+
+
+@overload
+def bind(
+    fd: int, af: Literal[AddressFamily.AF_UNIX], address: _PathT
+) -> Awaitable[None]: ...
+
 
 def bind(fd: int, af: int, address: _SockAddrT) -> Awaitable[None]:
     """Asynchronous bind(2) operation on the io_uring."""
     ...
+
 
 def listen(fd: int, backlog: int) -> Awaitable[None]:
     """Asynchronous listen(2) operation on the io_uring."""
@@ -220,37 +253,46 @@ def send(fd: int, buf: bytes, flags: int) -> Awaitable[int]:
     """Asynchronous send(2) operation on the io_uring."""
     ...
 
+
 def recv(fd: int, count: int, flags: int) -> Awaitable[bytes]:
     """Asynchronous recv(2) operation on the io_uring."""
     ...
 
-def statx(dfd: int | None, path: _PathT, flags: int, mask: int) -> Awaitable[StatxResult]:
+
+def statx(
+    dfd: int | None, path: _PathT, flags: int, mask: int
+) -> Awaitable[StatxResult]:
     """Asynchronous statx(2) operation on the io_uring."""
     ...
 
 @overload
-def getsockopt(fd: int, level: int, optname: int) -> Awaitable[int]:
-    ...
+def getsockopt(fd: int, level: int, optname: int) -> Awaitable[int]: ...
+
 
 @overload
-def getsockopt(fd: int, level: int, optname: int, optlen: int) -> Awaitable[bytes]:
-    ...
+def getsockopt(fd: int, level: int, optname: int, optlen: int) -> Awaitable[bytes]: ...
 
-def getsockopt(fd: int, level: int, optname: int, optlen: int = ...) -> Awaitable[int | bytes]:
+
+def getsockopt(
+    fd: int, level: int, optname: int, optlen: int = ...
+) -> Awaitable[int | bytes]:
     """Asynchronous getsockopt(2) operation on the io_uring."""
     ...
 
 @overload
-def setsockopt(fd: int, level: int, optname: int, value: int) -> Awaitable[None]:
-    ...
+def setsockopt(fd: int, level: int, optname: int, value: int) -> Awaitable[None]: ...
+
 
 @overload
-def setsockopt(fd: int, level: int, optname: int, value: bytes) -> Awaitable[None]:
-    ...
+def setsockopt(fd: int, level: int, optname: int, value: bytes) -> Awaitable[None]: ...
 
-def setsockopt(fd: int, level: int, optname: int, value: int | bytes) -> Awaitable[None]:
+
+def setsockopt(
+    fd: int, level: int, optname: int, value: int | bytes
+) -> Awaitable[None]:
     """Asynchronous setsockopt(2) operation on the io_uring."""
     ...
+
 
 def run(coro: Coroutine[Any, None, _RunT], conf: RunConfig) -> _RunT:
     """

@@ -54,19 +54,23 @@ PyObject *linkat_operation_create(PyObject *mod, PyObject *const *args, Py_ssize
     }
 
     int newdirfd;
-    if (args[0] == Py_None) {
+    if (args[2] == Py_None) {
         newdirfd = AT_FDCWD;
     } else if (!python_parse_int(&newdirfd, args[2])) {
+        Py_DECREF(oldpath);
         return NULL;
     }
 
     PyObject *newpath;
     if (!PyUnicode_FSConverter(args[3], &newpath)) {
+        Py_DECREF(oldpath);
         return NULL;
     }
 
     int flags;
     if (!python_parse_int(&flags, args[4])) {
+        Py_DECREF(oldpath);
+        Py_DECREF(newpath);
         return NULL;
     }
 
