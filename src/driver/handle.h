@@ -5,6 +5,7 @@
 
 #include "driver/proactor.h"
 #include "driver/run_config.h"
+#include "module.h"
 #include "op/base.h"
 #include "task.h"
 
@@ -14,9 +15,9 @@ typedef struct {
     TaskList run_queue;
 } RuntimeHandle;
 
-RuntimeHandle *runtime_enter(PyObject *mod, RunConfig *config);
-void runtime_exit(PyObject *mod);
+RuntimeHandle *runtime_enter(ImplState *state, RunConfig *config);
+void runtime_exit(ImplState *state);
 
-RuntimeHandle *runtime_get_local(PyObject *mod);
+RuntimeHandle *runtime_get_local(ImplState *state);
 
 int runtime_schedule_io(RuntimeHandle *rt, Task *task, Operation *op);

@@ -106,9 +106,10 @@ int proactor_init(Proactor *proactor, RunConfig *config) {
     if (config->ftable_size > 0) {
         res = io_uring_register_files_sparse(&proactor->ring, config->ftable_size);
         if (res != 0) {
+            io_uring_queue_exit(&proactor->ring);
             errno = -res;
             PyErr_SetFromErrno(PyExc_OSError);
-            return res;
+            return -1;
         }
 
         /*
@@ -214,7 +215,7 @@ int proactor_run(Proactor *proactor, TaskList *list, unsigned long timeout) {
             return 0;
         }
 
-        errno = res;
+        errno = -res;
         PyErr_SetFromErrno(PyExc_OSError);
         return -1;
     }

@@ -126,15 +126,21 @@ static PyObject *operation_waiter_iternext(PyObject *self) {
          * Task is woken again. This state transition is done
          * by the event loop.
          *
-         * Here we have unwrap our Outcome object which stores
-         * either a return value or an exception.
+         * The outcome is consumed on first access. A second
+         * await on an already-completed operation is an error.
          */
+        if (outcome_empty(&op->outcome)) {
+            PyErr_SetString(PyExc_RuntimeError, "Operation result was already consumed");
+            return NULL;
+        }
+
         PyObject *res = outcome_unwrap(&op->outcome);
         if (res != NULL) {
             PyObject *args[2] = {NULL, res};
             size_t nargsf     = 1 | PY_VECTORCALL_ARGUMENTS_OFFSET;
 
             PyObject *exc = PyObject_Vectorcall(PyExc_StopIteration, args + 1, nargsf, NULL);
+            Py_DECREF(res);
             if (exc != NULL) {
                 PyErr_SetRaisedException(exc);
             }

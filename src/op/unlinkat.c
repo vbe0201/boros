@@ -92,7 +92,7 @@ static PyType_Slot g_unlinkat_operation_slots[] = {
 };
 
 static PyType_Spec g_unlinkat_operation_spec = {
-    .name      = "_impl._OpenOperation",
+    .name      = "_impl._UnlinkAtOperation",
     .basicsize = sizeof(UnlinkAtOperation),
     .itemsize  = 0,
     .flags     = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_IMMUTABLETYPE,

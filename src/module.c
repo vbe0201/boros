@@ -285,7 +285,7 @@ PyDoc_STRVAR(g_run_doc, "Drives a given coroutine to completion.\n\n"
 static PyMethodDef g_module_methods[] = {
     {"nop", (PyCFunction)nop_operation_create, METH_O, g_nop_doc},
     {"socket", (PyCFunction)socket_operation_create, METH_FASTCALL, g_socket_doc},
-    {"run", (PyCFunction)boros_run, METH_FASTCALL, g_run_doc},
+    {"run", (PyCFunction)event_loop_run, METH_FASTCALL, g_run_doc},
     {"openat", (PyCFunction)openat_operation_create, METH_FASTCALL, g_openat_doc},
     {"read", (PyCFunction)read_operation_create, METH_FASTCALL, g_read_doc},
     {"write", (PyCFunction)write_operation_create, METH_FASTCALL, g_write_doc},

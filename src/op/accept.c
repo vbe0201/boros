@@ -22,9 +22,16 @@ static void accept_complete(PyObject *self, struct io_uring_cqe *cqe) {
     } else {
         PyObject *addr = format_sockaddr((const struct sockaddr *)&op->addr, op->addrlen);
         if (addr != NULL) {
-            PyObject *result = PyTuple_Pack(2, PyLong_FromLong(cqe->res), addr);
-            Py_DECREF(addr);
-            outcome_capture(&op->base.outcome, result);
+            PyObject *fd = PyLong_FromLong(cqe->res);
+            if (fd != NULL) {
+                PyObject *result = PyTuple_Pack(2, fd, addr);
+                Py_DECREF(fd);
+                Py_DECREF(addr);
+                outcome_capture(&op->base.outcome, result);
+            } else {
+                Py_DECREF(addr);
+                outcome_capture_error(&op->base.outcome);
+            }
         } else {
             outcome_capture_error(&op->base.outcome);
         }

@@ -32,6 +32,9 @@ void task_list_init(TaskList *self);
 /* Checks if the list is currently empty. */
 bool task_list_empty(TaskList *self);
 
+/* Moves all elements from src into dst. */
+void task_list_move(TaskList *dst, TaskList *src);
+
 /* Getters for back and front element of the list. */
 Task *task_list_back(TaskList *self);
 Task *task_list_front(TaskList *self);
@@ -41,19 +44,15 @@ void task_list_push_back(TaskList *self, Task *task);
 void task_list_push_front(TaskList *self, Task *task);
 
 /* Removes the element from back or front of the list. */
-void task_list_pop_back(TaskList *self);
-void task_list_pop_front(TaskList *self);
+Task *task_list_pop_back(TaskList *self);
+Task *task_list_pop_front(TaskList *self);
 
 /* Removes a given element that is currently in the list. */
 void task_list_remove(TaskList *self, Task *task);
-
-/* Clears all elements from the list. */
 void task_list_clear(TaskList *self);
 
 /* Task API */
 
-/* Allocates a Task instance. The object can be exposed to Python. */
 Task *task_create(PyObject *mod, PyObject *name, PyObject *coro);
 
-/* Registers Task as a Python class onto the module. */
 PyTypeObject *task_register(PyObject *mod);

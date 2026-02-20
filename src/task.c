@@ -51,6 +51,19 @@ bool task_list_empty(TaskList *self) {
     return !task_link_linked(&self->head);
 }
 
+void task_list_move(TaskList *dst, TaskList *src) {
+    if (task_list_empty(src)) {
+        task_list_init(dst);
+        return;
+    }
+
+    dst->head.next       = src->head.next;
+    dst->head.prev       = src->head.prev;
+    dst->head.next->prev = &dst->head;
+    dst->head.prev->next = &dst->head;
+    task_list_init(src);
+}
+
 Task *task_list_back(TaskList *self) {
     return (Task *)((uint8_t *)(self->head.prev) - offsetof(Task, link));
 }
@@ -60,19 +73,25 @@ Task *task_list_front(TaskList *self) {
 }
 
 void task_list_push_back(TaskList *self, Task *task) {
+    Py_INCREF(task);
     task_link_link_prev(&self->head, &task->link);
 }
 
 void task_list_push_front(TaskList *self, Task *task) {
+    Py_INCREF(task);
     task_link_link_next(&self->head, &task->link);
 }
 
-void task_list_pop_back(TaskList *self) {
-    task_link_unlink(self->head.prev);
+Task *task_list_pop_back(TaskList *self) {
+    Task *task = task_list_back(self);
+    task_link_unlink(&task->link);
+    return task;
 }
 
-void task_list_pop_front(TaskList *self) {
-    task_link_unlink(self->head.next);
+Task *task_list_pop_front(TaskList *self) {
+    Task *task = task_list_front(self);
+    task_link_unlink(&task->link);
+    return task;
 }
 
 void task_list_remove(TaskList *self, Task *task) {
@@ -81,6 +100,7 @@ void task_list_remove(TaskList *self, Task *task) {
     TaskLink *link = &task->link;
     assert(task_link_linked(link));
     task_link_unlink(link);
+    Py_DECREF(task);
 }
 
 void task_list_clear(TaskList *self) {
@@ -95,8 +115,8 @@ Task *task_create(PyObject *mod, PyObject *name, PyObject *coro) {
     Task *task = (Task *)python_alloc(state->Task_type);
     if (task != NULL) {
         task_link_init(&task->link);
-        task->name = name;
-        task->coro = coro;
+        task->name = Py_XNewRef(name);
+        task->coro = Py_XNewRef(coro);
     }
 
     return task;

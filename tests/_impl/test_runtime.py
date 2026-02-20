@@ -50,9 +50,8 @@ class TestRuntime:
             r2 = await op
             return r1, r2
 
-        r1, r2 = run(cfg, double_await())
-        assert r1 == 42
-        assert r2 is None
+        with pytest.raises(RuntimeError, match="Operation result was already consumed"):
+            run(cfg, double_await())
 
     def test_sequential_runs(self, cfg):
         async def first():

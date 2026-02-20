@@ -5,7 +5,7 @@
 
 #include <assert.h>
 
-#include "module.h"
+static inline void runtime_destroy(RuntimeHandle *handle);
 
 static inline RuntimeHandle *runtime_create(RunConfig *config) {
     RuntimeHandle *handle = PyMem_Malloc(sizeof(RuntimeHandle));
@@ -15,11 +15,16 @@ static inline RuntimeHandle *runtime_create(RunConfig *config) {
     }
 
     if (proactor_init(&handle->proactor, config) != 0) {
+        PyMem_Free(handle);
         return NULL;
     }
     task_list_init(&handle->run_queue);
 
-    proactor_enable(&handle->proactor);
+    if (proactor_enable(&handle->proactor) != 0) {
+        runtime_destroy(handle);
+        return NULL;
+    }
+
     return handle;
 }
 
@@ -30,8 +35,7 @@ static inline void runtime_destroy(RuntimeHandle *handle) {
     PyMem_Free(handle);
 }
 
-RuntimeHandle *runtime_enter(PyObject *mod, RunConfig *config) {
-    ImplState *state = PyModule_GetState(mod);
+RuntimeHandle *runtime_enter(ImplState *state, RunConfig *config) {
     RuntimeHandle *handle;
 
     assert(PyThread_tss_is_created(state->local_handle));
@@ -43,14 +47,15 @@ RuntimeHandle *runtime_enter(PyObject *mod, RunConfig *config) {
     }
 
     handle = runtime_create(config);
-    PyThread_tss_set(state->local_handle, handle);
+    if (handle == NULL) {
+        return NULL;
+    }
 
+    PyThread_tss_set(state->local_handle, handle);
     return handle;
 }
 
-void runtime_exit(PyObject *mod) {
-    ImplState *state = PyModule_GetState(mod);
-
+void runtime_exit(ImplState *state) {
     RuntimeHandle *handle = PyThread_tss_get(state->local_handle);
     if (handle == NULL) {
         return;
@@ -60,9 +65,7 @@ void runtime_exit(PyObject *mod) {
     PyThread_tss_set(state->local_handle, NULL);
 }
 
-RuntimeHandle *runtime_get_local(PyObject *mod) {
-    ImplState *state = PyModule_GetState(mod);
-
+RuntimeHandle *runtime_get_local(ImplState *state) {
     RuntimeHandle *handle = PyThread_tss_get(state->local_handle);
     if (handle == NULL) {
         PyErr_SetString(PyExc_RuntimeError, "No runtime active on the current thread");
